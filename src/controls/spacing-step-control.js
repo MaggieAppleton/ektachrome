@@ -5,6 +5,11 @@
  * on your spacing grid (e.g., 4px base = 0, 4, 8, 12, 16, 24, 32, 48, 64)
  */
 class SpacingStepControl extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
   connectedCallback() {
     const property = this.getAttribute('property'); // 'padding', 'margin', 'gap'
     const variable = this.getAttribute('variable');  // '--space-4'
@@ -21,6 +26,13 @@ class SpacingStepControl extends HTMLElement {
     
     this.shadowRoot.innerHTML = `
       <style>
+        :host { display: block; }
+        .label {
+          font-size: 10px;
+          font-family: 'SF Mono', monospace;
+          color: rgba(232, 228, 222, 0.7);
+          margin-bottom: 4px;
+        }
         .steps {
           display: flex;
           gap: 2px;
@@ -73,3 +85,6 @@ class SpacingStepControl extends HTMLElement {
     });
   }
 }
+
+customElements.define('spacing-step-control', SpacingStepControl);
+export { SpacingStepControl };

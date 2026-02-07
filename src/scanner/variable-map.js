@@ -40,3 +40,5 @@ function resolveTokensForElement(element) {
   return tokens;
   // Returns: { color: { variable: '--color-primary', ... }, padding: { variable: '--space-4', ... } }
 }
+
+export { variableMap, resolveTokensForElement };

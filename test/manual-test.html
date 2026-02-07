@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ektachrome — Manual Test</title>
+  <style>
+    :root {
+      --color-primary: oklch(0.62 0.21 255);
+      --color-surface: oklch(0.98 0.01 80);
+      --color-text: oklch(0.25 0.02 80);
+      --color-accent: oklch(0.72 0.18 150);
+
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-6: 24px; --space-8: 32px;
+
+      --text-sm: 0.875rem; --text-base: 1rem; --text-lg: 1.125rem;
+      --text-xl: 1.25rem; --text-2xl: 1.5rem;
+
+      --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px; --radius-xl: 12px;
+    }
+
+    * { margin: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: var(--text-base);
+      color: var(--color-text);
+      background: var(--color-surface);
+      padding: var(--space-8);
+      line-height: 1.5;
+    }
+
+    header {
+      margin-bottom: var(--space-8);
+    }
+
+    header h1 {
+      font-size: var(--text-2xl);
+      color: var(--color-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    header p {
+      font-size: var(--text-sm);
+      opacity: 0.7;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-8);
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: var(--text-lg);
+      margin-bottom: var(--space-2);
+    }
+
+    .card p {
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-4);
+      opacity: 0.8;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      border: none;
+      font-size: var(--text-sm);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .btn-accent {
+      background: var(--color-accent);
+      color: white;
+    }
+
+    .text-section {
+      max-width: 600px;
+      margin-bottom: var(--space-8);
+    }
+
+    .text-section h3 {
+      font-size: var(--text-xl);
+      margin-bottom: var(--space-3);
+    }
+
+    .text-section p {
+      font-size: var(--text-base);
+      margin-bottom: var(--space-4);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: var(--space-1) var(--space-3);
+      background: var(--color-primary);
+      color: white;
+      border-radius: var(--radius-xl);
+      font-size: var(--text-sm);
+    }
+
+    /* Toggle button — fixed bottom-right */
+    #toggle-btn {
+      position: fixed;
+      bottom: var(--space-6);
+      right: var(--space-6);
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-lg);
+      font-size: var(--text-base);
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 100000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    #toggle-btn.active {
+      background: var(--color-accent);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Ektachrome Test Page</h1>
+    <p>A sample UI using CSS custom properties. Click the button in the bottom-right to activate the inspector.</p>
+  </header>
+
+  <div class="card-grid">
+    <div class="card">
+      <h2>Color Tokens</h2>
+      <p>This card uses <code>--color-primary</code>, <code>--color-surface</code>, and spacing tokens for layout.</p>
+      <button class="btn btn-primary">Primary Action</button>
+    </div>
+    <div class="card">
+      <h2>Spacing Scale</h2>
+      <p>Padding and gaps use <code>--space-*</code> tokens from 4px to 32px in a consistent scale.</p>
+      <button class="btn btn-accent">Accent Action</button>
+    </div>
+    <div class="card">
+      <h2>Typography</h2>
+      <p>Font sizes use <code>--text-sm</code> through <code>--text-2xl</code> for a clean type hierarchy.</p>
+      <span class="badge">Badge Label</span>
+    </div>
+  </div>
+
+  <div class="text-section">
+    <h3>About This Test</h3>
+    <p>This page defines design tokens as CSS custom properties on <code>:root</code> and uses them throughout. Activate Ektachrome to inspect any element and see which tokens it uses.</p>
+    <p>The inspector should detect variables for color, spacing, typography, and border-radius — then display editable controls in the toolbar popup.</p>
+  </div>
+
+  <button id="toggle-btn">Activate Ektachrome</button>
+
+  <script type="module">
+    import { Ektachrome } from '../src/index.js';
+
+    const ek = new Ektachrome();
+    const btn = document.getElementById('toggle-btn');
+    let active = false;
+
+    btn.addEventListener('click', () => {
+      active = !active;
+      if (active) {
+        ek.activate();
+        btn.textContent = 'Deactivate Ektachrome';
+        btn.classList.add('active');
+      } else {
+        ek.deactivate();
+        btn.textContent = 'Activate Ektachrome';
+        btn.classList.remove('active');
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -35,3 +35,5 @@ function findCSSVariablesForElement(element) {
   
   return variables;
 }
+
+export { findCSSVariablesForElement };
