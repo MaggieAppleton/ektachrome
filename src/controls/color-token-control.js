@@ -1,3 +1,6 @@
+// Import the OKLCH picker component
+import { OklchPicker } from './oklch-picker.js';
+
 /**
  * <color-token-control> - Pick from design system color tokens
  * 
@@ -59,7 +62,7 @@ class ColorTokenControl extends HTMLElement {
         <span class="token-name">${variable}</span>
         <span class="usage-badge">used ${usageCount}×</span>
       </div>
-      <!-- oklch-picker is an external dependency from Kodachrome and must be loaded separately -->
+      <!-- Integrated OKLCH picker component -->
       <oklch-picker 
         key="${variable}" 
         label="Adjust token"

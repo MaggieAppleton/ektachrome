@@ -1,4 +1,5 @@
 // Import controls (registers custom elements as side effect)
+import { OklchPicker } from './controls/oklch-picker.js';
 import { ColorTokenControl } from './controls/color-token-control.js';
 import { SpacingStepControl } from './controls/spacing-step-control.js';
 import { ScalePicker } from './controls/scale-picker.js';
@@ -9,7 +10,7 @@ import { ElementPicker } from './picker/element-picker.js';
 
 // Import scanner utilities
 import { findCSSVariablesForElement } from './scanner/detect-css-vars.js';
-import { resolveTokensForElement, variableMap } from './scanner/variable-map.js';
+import { resolveTokensForElement, variableMap, buildVariableMap } from './scanner/variable-map.js';
 import { auditDesignSystem } from './scanner/design-system-audit.js';
 import { discoverVariables } from './bridge/variable-discovery.js';
 
@@ -51,6 +52,6 @@ class Ektachrome {
 }
 
 export { Ektachrome, ElementPicker, ToolbarPopup };
-export { ColorTokenControl, SpacingStepControl, ScalePicker };
-export { findCSSVariablesForElement, resolveTokensForElement, variableMap };
+export { OklchPicker, ColorTokenControl, SpacingStepControl, ScalePicker };
+export { findCSSVariablesForElement, resolveTokensForElement, variableMap, buildVariableMap };
 export { auditDesignSystem, discoverVariables };

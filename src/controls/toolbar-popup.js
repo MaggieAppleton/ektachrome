@@ -6,6 +6,8 @@
  * spacing-step-control, scale-picker).
  */
 import { findCSSVariablesForElement } from '../scanner/detect-css-vars.js';
+import { resolveTokensForElement, buildVariableMap } from '../scanner/variable-map.js';
+import { discoverVariables } from '../bridge/variable-discovery.js';
 
 const CATEGORY_MATCHERS = {
   color: /^(color|background-color|background|border-color)$/,
@@ -41,12 +43,29 @@ class ToolbarPopup extends HTMLElement {
    * Show the popup for a selected element.
    * @param {{ element: Element, name: string, path: string, rect: DOMRect, computedStyles: CSSStyleDeclaration }} elementInfo
    */
-  show(elementInfo) {
+  async show(elementInfo) {
     this._elementInfo = elementInfo;
 
-    // Resolve tokens
-    const vars = findCSSVariablesForElement(elementInfo.element);
+    // Multi-step variable resolution:
+    // 1. Try direct CSS variable detection
+    let vars = findCSSVariablesForElement(elementInfo.element);
+    
+    // 2. Try dynamic variable map resolution
+    const resolvedTokens = resolveTokensForElement(elementInfo.element);
+    const mappedVars = this._convertTokensToVars(resolvedTokens);
+    
+    // 3. Merge results, preferring direct detection
+    vars = this._mergeVariables(vars, mappedVars);
+    
+    // 4. If still no variables found, try Claude discovery (fallback)
+    if (vars.length === 0) {
+      console.log('[toolbar-popup] No variables found via automatic detection, trying Claude fallback...');
+      const claudeVars = await this._tryClaudeDiscovery(elementInfo);
+      vars = claudeVars;
+    }
+
     this._grouped = this._groupByCategory(vars);
+    console.log('[toolbar-popup] Resolved variables by category:', this._grouped);
 
     // Pick initial tab: first category that has tokens
     const availableTabs = Object.keys(this._grouped).filter(
@@ -317,6 +336,56 @@ class ToolbarPopup extends HTMLElement {
         color: rgba(232, 228, 222, 0.9);
       }
     `;
+  }
+
+  // Convert resolved tokens to variable format for consistency
+  _convertTokensToVars(tokens) {
+    const vars = [];
+    for (const [property, tokenInfo] of Object.entries(tokens)) {
+      vars.push({
+        variable: tokenInfo.variable,
+        property: property,
+        currentValue: tokenInfo.oklch || tokenInfo.scale || tokenInfo.step || 'unknown',
+        rawValue: `var(${tokenInfo.variable})`,
+        confidence: 0.8 // High confidence from dynamic resolution
+      });
+    }
+    return vars;
+  }
+
+  // Merge variables from different sources, preferring higher confidence
+  _mergeVariables(directVars, mappedVars) {
+    const merged = [...directVars];
+    const existingVars = new Set(directVars.map(v => v.variable));
+    
+    for (const mappedVar of mappedVars) {
+      if (!existingVars.has(mappedVar.variable)) {
+        merged.push(mappedVar);
+      }
+    }
+    
+    return merged;
+  }
+
+  // Fallback to Claude discovery when automatic detection fails
+  async _tryClaudeDiscovery(elementInfo) {
+    try {
+      // Try color discovery first (most common)
+      const colorVars = await discoverVariables(elementInfo, 'color');
+      if (colorVars.length > 0) return colorVars;
+      
+      // Try spacing discovery
+      const spacingVars = await discoverVariables(elementInfo, 'spacing');
+      if (spacingVars.length > 0) return spacingVars;
+      
+      // Try typography discovery
+      const typeVars = await discoverVariables(elementInfo, 'typography');
+      return typeVars;
+      
+    } catch (error) {
+      console.warn('[toolbar-popup] Claude discovery failed:', error);
+      return [];
+    }
   }
 }
 

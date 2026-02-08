@@ -115,11 +115,10 @@
       font-size: var(--text-sm);
     }
 
-    /* Toggle button — fixed bottom-right */
-    #toggle-btn {
+    /* Toggle buttons — fixed bottom-right */
+    #toggle-btn, #audit-btn {
       position: fixed;
       bottom: var(--space-6);
-      right: var(--space-6);
       padding: var(--space-3) var(--space-6);
       background: var(--color-primary);
       color: white;
@@ -132,8 +131,22 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
+    #toggle-btn {
+      right: var(--space-6);
+    }
+
+    #audit-btn {
+      right: calc(var(--space-6) + 200px);
+      background: var(--color-accent);
+    }
+
     #toggle-btn.active {
       background: var(--color-accent);
+    }
+
+    #audit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
   </style>
 </head>
@@ -169,24 +182,43 @@
   </div>
 
   <button id="toggle-btn">Activate Ektachrome</button>
+  <button id="audit-btn">Run Audit</button>
 
   <script type="module">
     import { Ektachrome } from '../src/index.js';
 
     const ek = new Ektachrome();
-    const btn = document.getElementById('toggle-btn');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const auditBtn = document.getElementById('audit-btn');
     let active = false;
 
-    btn.addEventListener('click', () => {
+    toggleBtn.addEventListener('click', () => {
       active = !active;
       if (active) {
         ek.activate();
-        btn.textContent = 'Deactivate Ektachrome';
-        btn.classList.add('active');
+        toggleBtn.textContent = 'Deactivate Ektachrome';
+        toggleBtn.classList.add('active');
       } else {
         ek.deactivate();
-        btn.textContent = 'Activate Ektachrome';
-        btn.classList.remove('active');
+        toggleBtn.textContent = 'Activate Ektachrome';
+        toggleBtn.classList.remove('active');
+      }
+    });
+
+    auditBtn.addEventListener('click', async () => {
+      auditBtn.textContent = 'Running Audit...';
+      auditBtn.disabled = true;
+      
+      try {
+        const report = await ek.audit();
+        console.log('Design System Audit Report:', report);
+        alert(`Audit Complete!\n\nFound ${report.summary.totalVariables} CSS variables\nUsage rate: ${Math.round(report.basicAnalysis.variableUsageRate * 100)}%\n\nCheck console for full report.`);
+      } catch (error) {
+        console.error('Audit failed:', error);
+        alert('Audit failed. Check console for details.');
+      } finally {
+        auditBtn.textContent = 'Run Audit';
+        auditBtn.disabled = false;
       }
     });
   </script>
