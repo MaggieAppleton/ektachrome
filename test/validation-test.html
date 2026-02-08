@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ektachrome - Validation Test</title>
+  <style>
+    :root {
+      /* Colors */
+      --color-primary: oklch(0.62 0.21 255);
+      --color-secondary: oklch(0.72 0.18 150);  
+      --color-surface: oklch(0.98 0.01 80);
+      --color-text: oklch(0.25 0.02 80);
+      --color-accent: oklch(0.72 0.18 150);
+      --color-error: oklch(0.65 0.25 25);
+
+      /* Spacing Scale */
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-6: 24px; --space-8: 32px; --space-12: 48px;
+
+      /* Typography Scale */
+      --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem; 
+      --text-lg: 1.125rem; --text-xl: 1.25rem; --text-2xl: 1.5rem;
+      
+      /* Border Radius Scale */
+      --radius-none: 0; --radius-sm: 2px; --radius-md: 4px; 
+      --radius-lg: 8px; --radius-xl: 12px; --radius-full: 9999px;
+
+      /* Shadow Scale */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    }
+
+    * { margin: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: var(--text-base);
+      color: var(--color-text);
+      background: var(--color-surface);
+      padding: var(--space-8);
+      line-height: 1.5;
+    }
+
+    .test-section {
+      margin-bottom: var(--space-12);
+      padding: var(--space-6);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: var(--radius-lg);
+      background: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .test-section h2 {
+      font-size: var(--text-xl);
+      color: var(--color-primary);
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-2);
+      border-bottom: 2px solid var(--color-primary);
+    }
+
+    /* Color Test Elements */
+    .color-samples {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .color-sample {
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      text-align: center;
+      font-size: var(--text-sm);
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .color-primary { background: var(--color-primary); }
+    .color-secondary { background: var(--color-secondary); }
+    .color-accent { background: var(--color-accent); }
+    .color-error { background: var(--color-error); }
+
+    /* Spacing Test Elements */
+    .spacing-samples {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .spacing-box {
+      background: var(--color-secondary);
+      color: white;
+      text-align: center;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .space-1 { padding: var(--space-1); }
+    .space-2 { padding: var(--space-2); }  
+    .space-4 { padding: var(--space-4); }
+    .space-6 { padding: var(--space-6); }
+    .space-8 { padding: var(--space-8); }
+
+    /* Typography Test Elements */
+    .type-samples > * {
+      margin-bottom: var(--space-3);
+      color: var(--color-text);
+    }
+
+    .text-xs { font-size: var(--text-xs); }
+    .text-sm { font-size: var(--text-sm); }
+    .text-base { font-size: var(--text-base); }
+    .text-lg { font-size: var(--text-lg); }
+    .text-xl { font-size: var(--text-xl); }
+    .text-2xl { font-size: var(--text-2xl); }
+
+    /* Border Radius Test Elements */
+    .radius-samples {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .radius-box {
+      height: 60px;
+      background: var(--color-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: var(--text-xs);
+      text-align: center;
+    }
+
+    .radius-sm { border-radius: var(--radius-sm); }
+    .radius-md { border-radius: var(--radius-md); }
+    .radius-lg { border-radius: var(--radius-lg); }
+    .radius-xl { border-radius: var(--radius-xl); }
+    .radius-full { border-radius: var(--radius-full); }
+
+    /* Mixed Complexity Elements */
+    .complex-card {
+      background: white;
+      padding: var(--space-6);
+      margin-bottom: var(--space-4);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      border-left: var(--space-1) solid var(--color-primary);
+    }
+
+    .complex-card h3 {
+      font-size: var(--text-lg);
+      color: var(--color-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    .complex-card p {
+      font-size: var(--text-sm);
+      color: var(--color-text);
+      margin-bottom: var(--space-3);
+    }
+
+    .complex-card .btn {
+      display: inline-block;
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-secondary);
+      color: white;
+      text-decoration: none;
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      transition: all 0.2s;
+    }
+
+    .complex-card .btn:hover {
+      background: var(--color-primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Test Controls */
+    .test-controls {
+      position: fixed;
+      bottom: var(--space-4);
+      right: var(--space-4);
+      display: flex;
+      gap: var(--space-2);
+      z-index: 100000;
+    }
+
+    .test-btn {
+      padding: var(--space-3) var(--space-6);
+      border: none;
+      border-radius: var(--radius-lg);
+      font-size: var(--text-base);
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all 0.2s;
+    }
+
+    .primary-btn {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .secondary-btn {
+      background: var(--color-secondary);
+      color: white;
+    }
+
+    .test-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .test-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Status indicator */
+    .status {
+      position: fixed;
+      top: var(--space-4);
+      right: var(--space-4);
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-surface);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .status.active {
+      background: var(--color-accent);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="status" id="status">Ready for Testing</div>
+
+  <header>
+    <h1 style="font-size: var(--text-2xl); color: var(--color-primary); margin-bottom: var(--space-2);">
+      Ektachrome Validation Test
+    </h1>
+    <p style="font-size: var(--text-sm); color: var(--color-text); opacity: 0.8; margin-bottom: var(--space-8);">
+      Comprehensive test page with 20+ CSS custom properties across all design token types.
+      Click elements to test variable detection and live editing capabilities.
+    </p>
+  </header>
+
+  <div class="test-section">
+    <h2>Color Tokens</h2>
+    <div class="color-samples">
+      <div class="color-sample color-primary">Primary<br>--color-primary</div>
+      <div class="color-sample color-secondary">Secondary<br>--color-secondary</div>
+      <div class="color-sample color-accent">Accent<br>--color-accent</div>
+      <div class="color-sample color-error">Error<br>--color-error</div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Spacing Tokens</h2>
+    <div class="spacing-samples">
+      <div class="spacing-box space-1">4px padding (--space-1)</div>
+      <div class="spacing-box space-2">8px padding (--space-2)</div>
+      <div class="spacing-box space-4">16px padding (--space-4)</div>
+      <div class="spacing-box space-6">24px padding (--space-6)</div>
+      <div class="spacing-box space-8">32px padding (--space-8)</div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Typography Scale</h2>
+    <div class="type-samples">
+      <div class="text-xs">Extra Small (--text-xs): Lorem ipsum dolor sit amet</div>
+      <div class="text-sm">Small (--text-sm): Lorem ipsum dolor sit amet</div>
+      <div class="text-base">Base (--text-base): Lorem ipsum dolor sit amet</div>
+      <div class="text-lg">Large (--text-lg): Lorem ipsum dolor sit amet</div>
+      <div class="text-xl">Extra Large (--text-xl): Lorem ipsum dolor sit amet</div>
+      <div class="text-2xl">2X Large (--text-2xl): Lorem ipsum dolor sit amet</div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Border Radius Scale</h2>
+    <div class="radius-samples">
+      <div class="radius-box radius-sm">Small<br>--radius-sm</div>
+      <div class="radius-box radius-md">Medium<br>--radius-md</div>
+      <div class="radius-box radius-lg">Large<br>--radius-lg</div>
+      <div class="radius-box radius-xl">X-Large<br>--radius-xl</div>
+      <div class="radius-box radius-full">Full<br>--radius-full</div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Complex Elements</h2>
+    <div class="complex-card">
+      <h3>Card with Multiple Tokens</h3>
+      <p>This card uses colors, spacing, typography, shadows, and border radius tokens. 
+         Perfect for testing complex variable resolution.</p>
+      <a href="#" class="btn">Action Button</a>
+    </div>
+    <div class="complex-card">
+      <h3>Another Complex Card</h3>
+      <p>Each element here should be detectable by Ektachrome's variable resolution system.
+         Try selecting different parts to see which tokens control them.</p>
+      <a href="#" class="btn">Secondary Action</a>
+    </div>
+  </div>
+
+  <div class="test-controls">
+    <button class="test-btn secondary-btn" id="audit-btn">Run Audit</button>
+    <button class="test-btn primary-btn" id="toggle-btn">Activate Ektachrome</button>
+  </div>
+
+  <script type="module">
+    import { Ektachrome } from '../src/index.js';
+
+    const ek = new Ektachrome();
+    const toggleBtn = document.getElementById('toggle-btn');
+    const auditBtn = document.getElementById('audit-btn');
+    const status = document.getElementById('status');
+    let active = false;
+
+    // Toggle Ektachrome activation
+    toggleBtn.addEventListener('click', () => {
+      active = !active;
+      if (active) {
+        ek.activate();
+        toggleBtn.textContent = 'Deactivate';
+        toggleBtn.classList.add('active');
+        status.textContent = 'Ektachrome Active - Click elements to inspect';
+        status.classList.add('active');
+        console.log('✅ Ektachrome activated');
+      } else {
+        ek.deactivate();
+        toggleBtn.textContent = 'Activate Ektachrome';
+        toggleBtn.classList.remove('active');
+        status.textContent = 'Ready for Testing';
+        status.classList.remove('active');
+        console.log('⏸️ Ektachrome deactivated');
+      }
+    });
+
+    // Run design system audit
+    auditBtn.addEventListener('click', async () => {
+      auditBtn.textContent = 'Running Audit...';
+      auditBtn.disabled = true;
+      status.textContent = 'Running design system audit...';
+      
+      const startTime = performance.now();
+      
+      try {
+        const report = await ek.audit();
+        const duration = Math.round(performance.now() - startTime);
+        
+        console.group('🔍 Design System Audit Report');
+        console.log('Duration:', duration + 'ms');
+        console.log('Summary:', report.summary);
+        console.log('Basic Analysis:', report.basicAnalysis);
+        if (report.claudeAnalysis) {
+          console.log('Claude Analysis:', report.claudeAnalysis);
+        }
+        console.log('Recommendations:', report.recommendations);
+        console.groupEnd();
+        
+        // Show summary alert
+        const summary = report.summary;
+        const analysis = report.basicAnalysis;
+        alert(`✅ Design System Audit Complete (${duration}ms)
+
+📊 Summary:
+• ${summary.totalVariables} CSS variables defined
+• ${summary.usedVariables} variables in use (${Math.round(analysis.variableUsageRate * 100)}%)
+• ${summary.unusedVariables} unused variables
+• ${summary.rawColorValues} raw color values found
+
+🎨 Token Coverage:
+• Color: ${Math.round(analysis.colorTokenCoverage.coverage * 100)}%
+• Spacing: ${Math.round(analysis.spacingConsistency.consistency * 100)}% consistent
+
+📋 Recommendations: ${report.recommendations.length} suggestions
+        
+Check console for detailed report.`);
+        
+        status.textContent = `Audit complete - ${summary.totalVariables} variables found`;
+        
+      } catch (error) {
+        console.error('❌ Audit failed:', error);
+        alert(`❌ Audit failed: ${error.message}\n\nCheck console for details.`);
+        status.textContent = 'Audit failed';
+      } finally {
+        auditBtn.textContent = 'Run Audit';
+        auditBtn.disabled = false;
+      }
+    });
+
+    // Test validation on page load
+    console.group('🚀 Ektachrome Validation Test');
+    console.log('Page loaded with comprehensive test elements');
+    console.log('Components available:', {
+      OklchPicker: typeof customElements.get('oklch-picker') !== 'undefined',
+      ColorTokenControl: typeof customElements.get('color-token-control') !== 'undefined',
+      SpacingStepControl: typeof customElements.get('spacing-step-control') !== 'undefined',
+      ScalePicker: typeof customElements.get('scale-picker') !== 'undefined',
+      ToolbarPopup: typeof customElements.get('toolbar-popup') !== 'undefined',
+    });
+    console.log('Ready for testing! Use the buttons to activate inspector or run audit.');
+    console.groupEnd();
+  </script>
+
+</body>
+</html>
