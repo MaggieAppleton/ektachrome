@@ -8,7 +8,6 @@
   --radius-sm: 2px;
   --radius-md: 4px;
   --font-size-base: 16px;
-  --space-test: 16px;
 }
 
 .dark {
@@ -21,5 +20,4 @@
 .card {
   --card-bg: oklch(0.98 0.01 260);
   --card-border: oklch(0.85 0.02 260);
-  --component-padding: 24px;
 }
