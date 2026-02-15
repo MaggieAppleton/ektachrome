@@ -1,38 +1,70 @@
-async function discoverVariables(elementInfo, adjustmentType, apiKey = process.env.ANTHROPIC_API_KEY) {
-  if (!apiKey) {
-    console.warn('[variable-discovery] No API key provided. Set ANTHROPIC_API_KEY environment variable.');
+/**
+ * Claude-powered variable discovery for complex cases
+ * 
+ * Used as a fallback when automatic detection fails to find
+ * CSS custom properties for an element.
+ */
+
+import { callClaudeJSON, isClaudeAvailable } from '../utils/claude-client.js';
+import { PROPERTY_CATEGORIES } from '../utils/property-categories.js';
+
+const SYSTEM_PROMPT = `You analyze CSS to find which custom properties (CSS variables) control a given element's appearance. 
+
+Focus on identifying:
+1. CSS custom properties that directly affect the requested property type
+2. The current computed values and their likely sources
+3. Whether values should be tokenized (converted to variables)
+
+Always return valid JSON array format.`;
+
+/**
+ * Discover CSS variables for an element using Claude
+ * 
+ * @param {object} elementInfo - Element info from ElementPicker
+ * @param {string} adjustmentType - Category: 'color', 'spacing', 'typography', 'radius', 'shadow'
+ * @param {string} [apiKey] - Optional API key override
+ * @returns {Promise<Array>} Array of variable suggestions
+ */
+async function discoverVariables(elementInfo, adjustmentType, apiKey = null) {
+  if (!isClaudeAvailable() && !apiKey) {
+    console.warn('[variable-discovery] No API key configured. Set ANTHROPIC_API_KEY in .env file.');
     return [];
   }
 
   try {
     console.log('[variable-discovery] Discovering variables for', adjustmentType, 'on', elementInfo.path);
     
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'content-type': 'application/json',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        system: `You analyze CSS to find which custom properties (CSS variables) control a given element's appearance. 
-        
-Focus on identifying:
-1. CSS custom properties that directly affect the requested property type
-2. The current computed values and their likely sources
-3. Whether values should be tokenized (converted to variables)
+    const prompt = buildPrompt(elementInfo, adjustmentType);
+    
+    const variables = await callClaudeJSON({
+      system: SYSTEM_PROMPT,
+      prompt,
+      apiKey,
+      maxTokens: 1024,
+      jsonType: 'array',
+    });
+    
+    console.log('[variable-discovery] Found', variables.length, 'variable suggestions');
+    return variables;
+    
+  } catch (error) {
+    console.warn('[variable-discovery] Failed to discover variables:', error.message);
+    return [];
+  }
+}
 
-Always return valid JSON array format.`,
-        messages: [{
-          role: 'user', 
-          content: `Element: ${elementInfo.path}
+/**
+ * Build the prompt for Claude
+ */
+function buildPrompt(elementInfo, adjustmentType) {
+  const relevantStyles = extractRelevantStyles(elementInfo.computedStyles, adjustmentType);
+  
+  return `Element: ${elementInfo.path}
 Element classes: ${elementInfo.element?.className || 'none'}
 Element ID: ${elementInfo.element?.id || 'none'}
 
 Computed styles for ${adjustmentType}:
-${JSON.stringify(extractRelevantStyles(elementInfo.computedStyles, adjustmentType), null, 2)}
+${JSON.stringify(relevantStyles, null, 2)}
 
 Full computed styles:
 ${JSON.stringify(elementInfo.computedStyles, null, 2)}
@@ -46,49 +78,23 @@ Consider:
 
 Return JSON array: [{ "variable": "--var-name", "currentValue": "computed value", "property": "css-property", "type": "color|length|number", "confidence": 0.0-1.0 }]
 
-If no custom properties found, suggest which properties could be tokenized.`
-        }]
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    const responseText = data.content[0].text;
-    
-    // Try to extract JSON from the response
-    try {
-      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-      const variables = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-      
-      console.log('[variable-discovery] Found', variables.length, 'variable suggestions');
-      return variables;
-      
-    } catch (parseError) {
-      console.warn('[variable-discovery] Could not parse Claude response as JSON:', parseError);
-      console.log('[variable-discovery] Raw response:', responseText);
-      return [];
-    }
-    
-  } catch (error) {
-    console.warn('[variable-discovery] Failed to discover variables:', error);
-    return [];
-  }
+If no custom properties found, suggest which properties could be tokenized.`;
 }
 
-// Extract only styles relevant to the adjustment type
+/**
+ * Extract only styles relevant to the adjustment type
+ */
 function extractRelevantStyles(computedStyles, adjustmentType) {
-  const relevantProperties = {
-    'color': ['color', 'background-color', 'border-color', 'fill', 'stroke'],
-    'spacing': ['padding', 'margin', 'gap', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left'],
-    'typography': ['font-size', 'line-height', 'font-weight', 'font-family', 'letter-spacing'],
-    'radius': ['border-radius', 'border-top-left-radius', 'border-top-right-radius', 'border-bottom-left-radius', 'border-bottom-right-radius'],
-    'shadow': ['box-shadow', 'text-shadow', 'filter']
+  // Map adjustment type to property category
+  const categoryMap = {
+    'color': PROPERTY_CATEGORIES.color,
+    'spacing': PROPERTY_CATEGORIES.spacing,
+    'typography': PROPERTY_CATEGORIES.typography,
+    'radius': PROPERTY_CATEGORIES.radius,
+    'shadow': PROPERTY_CATEGORIES.shadow,
   };
   
-  const properties = relevantProperties[adjustmentType] || Object.keys(computedStyles);
+  const properties = categoryMap[adjustmentType] || Object.keys(computedStyles);
   const relevant = {};
   
   for (const prop of properties) {
