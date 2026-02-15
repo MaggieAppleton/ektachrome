@@ -23,6 +23,7 @@ class OklchPicker extends HTMLElement {
     this._isDraggingLightness = false;
     this._isDraggingChroma = false;
     this._isDraggingHue = false;
+    this._rafId = null; // For throttling drag updates
   }
 
   static get observedAttributes() {
@@ -211,6 +212,10 @@ class OklchPicker extends HTMLElement {
     document.removeEventListener('mouseup', this._onEnd);
     document.removeEventListener('touchmove', this._onMove);
     document.removeEventListener('touchend', this._onEnd);
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
+    }
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -234,13 +239,16 @@ class OklchPicker extends HTMLElement {
     
     ctx.clearRect(0, 0, width, height);
     
-    // Draw gradient from dark (left) to light (right)
-    for (let x = 0; x < width; x++) {
-      const l = x / width;
+    // Use gradient with multiple stops (much faster than 400 fillRect calls)
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    const stops = 16; // 16 stops provides good accuracy for OKLCH lightness
+    for (let i = 0; i <= stops; i++) {
+      const l = i / stops;
       const color = this._oklchToRgb(l, this.c, this.h);
-      ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
-      ctx.fillRect(x, 0, 1, height);
+      gradient.addColorStop(l, `rgb(${color.r}, ${color.g}, ${color.b})`);
     }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
   }
 
   _drawChromaTrack() {
@@ -250,14 +258,18 @@ class OklchPicker extends HTMLElement {
     
     ctx.clearRect(0, 0, width, height);
     
-    // Draw gradient from no chroma (left) to max chroma (right)
+    // Use gradient with multiple stops for chroma
     const maxChroma = 0.37;
-    for (let x = 0; x < width; x++) {
-      const c = (x / width) * maxChroma;
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    const stops = 16;
+    for (let i = 0; i <= stops; i++) {
+      const t = i / stops;
+      const c = t * maxChroma;
       const color = this._oklchToRgb(this.l, c, this.h);
-      ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
-      ctx.fillRect(x, 0, 1, height);
+      gradient.addColorStop(t, `rgb(${color.r}, ${color.g}, ${color.b})`);
     }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
   }
 
   _drawHueTrack() {
@@ -267,13 +279,17 @@ class OklchPicker extends HTMLElement {
     
     ctx.clearRect(0, 0, width, height);
     
-    // Draw gradient across full hue spectrum (0-360)
-    for (let x = 0; x < width; x++) {
-      const h = (x / width) * 360;
+    // Use gradient with more stops for hue (needs more for smooth color wheel)
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    const stops = 24; // Hue needs more stops for perceptual smoothness
+    for (let i = 0; i <= stops; i++) {
+      const t = i / stops;
+      const h = t * 360;
       const color = this._oklchToRgb(this.l, this.c, h);
-      ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
-      ctx.fillRect(x, 0, 1, height);
+      gradient.addColorStop(t, `rgb(${color.r}, ${color.g}, ${color.b})`);
     }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
   }
 
   _updateHandles() {
@@ -320,15 +336,25 @@ class OklchPicker extends HTMLElement {
   }
 
   _onMove(e) {
-    if (this._isDraggingLightness) {
-      this._updateFromLightnessEvent(e);
+    if (!this._isDraggingLightness && !this._isDraggingChroma && !this._isDraggingHue) {
+      return;
     }
-    if (this._isDraggingChroma) {
-      this._updateFromChromaEvent(e);
-    }
-    if (this._isDraggingHue) {
-      this._updateFromHueEvent(e);
-    }
+    
+    // Throttle updates to animation frame rate
+    if (this._rafId) return;
+    
+    this._rafId = requestAnimationFrame(() => {
+      this._rafId = null;
+      if (this._isDraggingLightness) {
+        this._updateFromLightnessEvent(e);
+      }
+      if (this._isDraggingChroma) {
+        this._updateFromChromaEvent(e);
+      }
+      if (this._isDraggingHue) {
+        this._updateFromHueEvent(e);
+      }
+    });
   }
 
   _onEnd() {
@@ -406,35 +432,40 @@ class OklchPicker extends HTMLElement {
     }));
   }
 
-  // OKLCH to RGB conversion (approximate, works for display)
+  // OKLCH to RGB conversion
+  // Based on the official OKLab specification by Bjorn Ottosson
+  // https://bottosson.github.io/posts/oklab/
   _oklchToRgb(l, c, h) {
     // Convert OKLCH to OKLab
     const hRad = h * (Math.PI / 180);
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
     
-    // OKLab to linear sRGB
+    // OKLab to LMS (using correct forward matrix)
     const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
     const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
     const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
     
-    const l3 = l_ * l_ * l_;
-    const m3 = m_ * m_ * m_;
-    const s3 = s_ * s_ * s_;
+    // LMS to linear sRGB (cube the values first, then apply matrix)
+    const lCubed = l_ * l_ * l_;
+    const mCubed = m_ * m_ * m_;
+    const sCubed = s_ * s_ * s_;
     
-    let r = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
-    let g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
-    let bl = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
+    // LMS to linear RGB matrix (correct coefficients)
+    let rLinear =  4.0767416621 * lCubed - 3.3077115913 * mCubed + 0.2309699292 * sCubed;
+    let gLinear = -1.2684380046 * lCubed + 2.6097574011 * mCubed - 0.3413193965 * sCubed;
+    let bLinear = -0.0041960863 * lCubed - 0.7034186147 * mCubed + 1.7076147010 * sCubed;
     
-    // Linear to sRGB
-    const toSrgb = (x) => {
+    // Linear sRGB to sRGB (gamma correction)
+    const linearToSrgb = (x) => {
       if (x <= 0.0031308) return x * 12.92;
-      return 1.055 * Math.pow(x, 1/2.4) - 0.055;
+      return 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
     };
     
-    r = Math.round(Math.max(0, Math.min(1, toSrgb(r))) * 255);
-    g = Math.round(Math.max(0, Math.min(1, toSrgb(g))) * 255);
-    bl = Math.round(Math.max(0, Math.min(1, toSrgb(bl))) * 255);
+    // Clamp to valid range and convert to 8-bit
+    const r = Math.round(Math.max(0, Math.min(1, linearToSrgb(rLinear))) * 255);
+    const g = Math.round(Math.max(0, Math.min(1, linearToSrgb(gLinear))) * 255);
+    const bl = Math.round(Math.max(0, Math.min(1, linearToSrgb(bLinear))) * 255);
     
     return { r, g, b: bl };
   }
