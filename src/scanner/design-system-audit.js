@@ -7,103 +7,91 @@
  * recommendations for design system improvements.
  */
 
+import { callClaudeJSON, isClaudeAvailable } from '../utils/claude-client.js';
+import { iterateStyleRules, iterateRootCustomProperties, extractVarReferences } from '../utils/stylesheet-scanner.js';
+
+const CLAUDE_SYSTEM_PROMPT = `You are a design system expert analyzing CSS for inconsistencies and improvements. 
+
+Analyze the provided CSS variables and raw values to identify:
+1. Inconsistent naming patterns
+2. Duplicate or near-duplicate values
+3. Missing design tokens (hardcoded values that should be variables)  
+4. Spacing scale consistency
+5. Color palette coherence
+6. Typography scale organization
+
+Return a JSON object with your analysis and specific recommendations.`;
+
 export async function auditDesignSystem(options = {}) {
-  const { useClaudeAnalysis = true, apiKey = process.env.ANTHROPIC_API_KEY } = options;
+  const { useClaudeAnalysis = true, apiKey } = options;
   
   console.log('[audit] Starting design system audit...');
   
   // Phase 1: Collect all CSS data
-  const scanResults = await scanStylesheets();
+  const scanResults = scanStylesheets();
   
-  // Phase 2: Analyze with Claude (if enabled and key available)
+  // Phase 2: Analyze with Claude (if enabled and available)
   let claudeAnalysis = null;
-  if (useClaudeAnalysis && apiKey) {
+  if (useClaudeAnalysis && (apiKey || isClaudeAvailable())) {
     claudeAnalysis = await analyzeWithClaude(scanResults, apiKey);
   }
   
   // Phase 3: Generate comprehensive report
   const report = generateAuditReport(scanResults, claudeAnalysis);
   
-  console.log('[audit] Audit complete. Found', scanResults.variables.length, 'CSS variables');
+  console.log('[audit] Audit complete. Found', scanResults.definedCount, 'CSS variables');
   return report;
 }
 
-async function scanStylesheets() {
+function scanStylesheets() {
   const allVariables = [];
   const allValues = { colors: [], spacing: [], typography: [], radii: [] };
-  const unusedVariables = [];
+  const usedVariables = new Set();
   
   // Get all defined CSS variables from :root
-  const rootStyles = window.getComputedStyle(document.documentElement);
-  const definedVariables = Array.from(rootStyles).filter(prop => prop.startsWith('--'));
-  
-  // 1. Collect all CSS custom properties defined in stylesheets
-  for (const sheet of document.styleSheets) {
-    try {
-      for (const rule of sheet.cssRules) {
-        if (rule.style) {
-          for (const prop of rule.style) {
-            if (prop.startsWith('--')) {
-              const value = rule.style.getPropertyValue(prop).trim();
-              allVariables.push({ 
-                name: prop, 
-                value, 
-                selector: rule.selectorText,
-                sheet: sheet.href || 'inline'
-              });
-            }
-            
-            // Collect raw values to find inconsistencies
-            const val = rule.style.getPropertyValue(prop).trim();
-            if (val) {
-              if (prop === 'color' || prop === 'background-color' || prop === 'border-color') {
-                allValues.colors.push({ property: prop, value: val, selector: rule.selectorText });
-              }
-              if (prop === 'padding' || prop === 'margin' || prop === 'gap') {
-                allValues.spacing.push({ property: prop, value: val, selector: rule.selectorText });
-              }
-              if (prop === 'font-size' || prop === 'line-height') {
-                allValues.typography.push({ property: prop, value: val, selector: rule.selectorText });
-              }
-              if (prop === 'border-radius') {
-                allValues.radii.push({ property: prop, value: val, selector: rule.selectorText });
-              }
-            }
-          }
-        }
-      }
-    } catch (e) { 
-      console.warn('[audit] CORS blocked stylesheet:', sheet.href);
-    }
+  const definedVariables = [];
+  for (const { name, value } of iterateRootCustomProperties()) {
+    definedVariables.push(name);
   }
   
-  // 2. Detect unused variables
-  const usedVariables = new Set();
-  for (const sheet of document.styleSheets) {
-    try {
-      for (const rule of sheet.cssRules) {
-        if (rule.style) {
-          for (const prop of rule.style) {
-            const value = rule.style.getPropertyValue(prop);
-            const varMatches = value.match(/var\(--[^)]+\)/g);
-            if (varMatches) {
-              varMatches.forEach(v => {
-                const varName = v.match(/var\((--[^,)]+)/)?.[1];
-                if (varName) usedVariables.add(varName);
-              });
-            }
-          }
-        }
+  // Scan all stylesheets
+  for (const { rule, sheet } of iterateStyleRules()) {
+    for (const prop of rule.style) {
+      const value = rule.style.getPropertyValue(prop).trim();
+      if (!value) continue;
+      
+      // Collect CSS custom property definitions
+      if (prop.startsWith('--')) {
+        allVariables.push({ 
+          name: prop, 
+          value, 
+          selector: rule.selectorText,
+          sheet: sheet.href || 'inline'
+        });
       }
-    } catch (e) { /* CORS */ }
+      
+      // Track var() references
+      const refs = extractVarReferences(value);
+      refs.forEach(varName => usedVariables.add(varName));
+      
+      // Collect raw values by category
+      if (prop === 'color' || prop === 'background-color' || prop === 'border-color') {
+        allValues.colors.push({ property: prop, value, selector: rule.selectorText });
+      }
+      if (prop === 'padding' || prop === 'margin' || prop === 'gap') {
+        allValues.spacing.push({ property: prop, value, selector: rule.selectorText });
+      }
+      if (prop === 'font-size' || prop === 'line-height') {
+        allValues.typography.push({ property: prop, value, selector: rule.selectorText });
+      }
+      if (prop === 'border-radius') {
+        allValues.radii.push({ property: prop, value, selector: rule.selectorText });
+      }
+    }
   }
   
   // Find defined but unused variables
-  for (const varName of definedVariables) {
-    if (!usedVariables.has(varName)) {
-      unusedVariables.push(varName);
-    }
-  }
+  const unusedVariables = definedVariables.filter(v => !usedVariables.has(v));
   
   return { 
     variables: allVariables, 
@@ -118,44 +106,21 @@ async function analyzeWithClaude(scanResults, apiKey) {
   try {
     console.log('[audit] Analyzing with Claude...');
     
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'content-type': 'application/json',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2048,
-        system: `You are a design system expert analyzing CSS for inconsistencies and improvements. 
-        
-Analyze the provided CSS variables and raw values to identify:
-1. Inconsistent naming patterns
-2. Duplicate or near-duplicate values
-3. Missing design tokens (hardcoded values that should be variables)  
-4. Spacing scale consistency
-5. Color palette coherence
-6. Typography scale organization
-
-Return a JSON object with your analysis and specific recommendations.`,
-        messages: [{
-          role: 'user', 
-          content: `Analyze this design system:
+    const prompt = `Analyze this design system:
 
 CSS Variables (${scanResults.variables.length} total):
-${JSON.stringify(scanResults.variables, null, 2)}
+${JSON.stringify(scanResults.variables.slice(0, 50), null, 2)}${scanResults.variables.length > 50 ? '\n... (truncated)' : ''}
 
 Raw Color Values:
-${JSON.stringify(scanResults.rawValues.colors, null, 2)}
+${JSON.stringify(scanResults.rawValues.colors.slice(0, 30), null, 2)}${scanResults.rawValues.colors.length > 30 ? '\n... (truncated)' : ''}
 
 Raw Spacing Values:
-${JSON.stringify(scanResults.rawValues.spacing, null, 2)}
+${JSON.stringify(scanResults.rawValues.spacing.slice(0, 30), null, 2)}${scanResults.rawValues.spacing.length > 30 ? '\n... (truncated)' : ''}
 
 Raw Typography Values:
-${JSON.stringify(scanResults.rawValues.typography, null, 2)}
+${JSON.stringify(scanResults.rawValues.typography.slice(0, 20), null, 2)}${scanResults.rawValues.typography.length > 20 ? '\n... (truncated)' : ''}
 
-Unused Variables: ${scanResults.unusedVariables.join(', ')}
+Unused Variables: ${scanResults.unusedVariables.slice(0, 20).join(', ')}${scanResults.unusedVariables.length > 20 ? '... (truncated)' : ''}
 
 Please analyze and return JSON with:
 {
@@ -163,29 +128,18 @@ Please analyze and return JSON with:
   "inconsistencies": [{ "type": "naming|value|missing", "description": "...", "examples": [...] }],
   "recommendations": [{ "priority": "high|medium|low", "action": "...", "benefit": "..." }],
   "scores": { "naming": 0-10, "consistency": 0-10, "coverage": 0-10, "organization": 0-10 }
-}`
-        }]
-      })
+}`;
+
+    return await callClaudeJSON({
+      system: CLAUDE_SYSTEM_PROMPT,
+      prompt,
+      apiKey,
+      maxTokens: 2048,
+      jsonType: 'object',
     });
     
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    const analysisText = data.content[0].text;
-    
-    // Try to parse JSON from Claude's response
-    try {
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-      return jsonMatch ? JSON.parse(jsonMatch[0]) : { error: 'No JSON found in response' };
-    } catch (parseError) {
-      console.warn('[audit] Could not parse Claude response as JSON:', parseError);
-      return { error: 'Invalid JSON response', rawResponse: analysisText };
-    }
-    
   } catch (error) {
-    console.warn('[audit] Claude analysis failed:', error);
+    console.warn('[audit] Claude analysis failed:', error.message);
     return { error: error.message };
   }
 }
@@ -204,7 +158,9 @@ function generateAuditReport(scanResults, claudeAnalysis) {
     
     // Basic analysis (always available)
     basicAnalysis: {
-      variableUsageRate: scanResults.usedCount / scanResults.definedCount,
+      variableUsageRate: scanResults.definedCount > 0 
+        ? scanResults.usedCount / scanResults.definedCount 
+        : 0,
       colorTokenCoverage: calculateColorTokenCoverage(scanResults),
       spacingConsistency: calculateSpacingConsistency(scanResults),
       namingPatterns: detectNamingPatterns(scanResults.variables)
@@ -231,16 +187,23 @@ function calculateColorTokenCoverage(scanResults) {
     !c.value.includes('var(')
   );
   
+  const total = colorVariables.length + rawColors.length;
   return {
     tokenizedColors: colorVariables.length,
     hardcodedColors: rawColors.length,
-    coverage: colorVariables.length / (colorVariables.length + rawColors.length)
+    coverage: total > 0 ? colorVariables.length / total : 1
   };
 }
 
 function calculateSpacingConsistency(scanResults) {
-  const spacingValues = scanResults.rawValues.spacing.map(s => parseFloat(s.value));
+  const spacingValues = scanResults.rawValues.spacing
+    .map(s => parseFloat(s.value))
+    .filter(v => !isNaN(v));
   const uniqueValues = [...new Set(spacingValues)];
+  
+  if (uniqueValues.length === 0) {
+    return { baseUnit: 4, consistency: 1, uniqueValues: 0 };
+  }
   
   // Check if values follow a consistent scale (multiples of base unit)
   const possibleBaseUnits = [2, 4, 8];
@@ -284,7 +247,7 @@ function generateRecommendations(scanResults, claudeAnalysis) {
   }
   
   const colorCoverage = calculateColorTokenCoverage(scanResults);
-  if (colorCoverage.coverage < 0.8) {
+  if (colorCoverage.hardcodedColors > 0 && colorCoverage.coverage < 0.8) {
     recommendations.push({
       priority: 'high',
       action: `Convert ${colorCoverage.hardcodedColors} hardcoded colors to design tokens`,
@@ -293,7 +256,7 @@ function generateRecommendations(scanResults, claudeAnalysis) {
   }
   
   const spacingConsistency = calculateSpacingConsistency(scanResults);
-  if (spacingConsistency.consistency < 0.7) {
+  if (spacingConsistency.uniqueValues > 0 && spacingConsistency.consistency < 0.7) {
     recommendations.push({
       priority: 'medium',
       action: `Standardize spacing values to ${spacingConsistency.baseUnit}px grid`,

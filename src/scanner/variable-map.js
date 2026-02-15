@@ -3,9 +3,13 @@
  * Maps every element's visual properties back to the token that controls them.
  */
 
+import { cssToOklch } from '../utils/color-conversion.js';
+import { iterateRootCustomProperties } from '../utils/stylesheet-scanner.js';
+
 // Dynamic cache - gets populated by buildVariableMap()
 let variableMap = {};
 let isBuilt = false;
+let variableCount = 0;
 
 /**
  * Build the variable map by scanning all CSS custom properties in the document
@@ -24,30 +28,17 @@ function buildVariableMap() {
     'box-shadow': {}
   };
 
-  // Get computed style of root to capture all CSS variables
-  const rootStyles = window.getComputedStyle(document.documentElement);
-  const allProperties = Array.from(rootStyles);
+  variableCount = 0;
   
-  // Find all CSS custom properties (variables)
-  const customProperties = allProperties.filter(prop => prop.startsWith('--'));
-  
-  for (const customProp of customProperties) {
-    const value = rootStyles.getPropertyValue(customProp).trim();
+  for (const { name: customProp, value } of iterateRootCustomProperties()) {
+    variableCount++;
     
     // Categorize by property type based on variable name and value
     if (customProp.includes('color') || isColorValue(value)) {
-      map.color[value] = { 
-        variable: customProp, 
-        oklch: convertToOklch(value) 
-      };
-      map['background-color'][value] = { 
-        variable: customProp, 
-        oklch: convertToOklch(value) 
-      };
-      map['border-color'][value] = { 
-        variable: customProp, 
-        oklch: convertToOklch(value) 
-      };
+      const oklch = cssToOklch(value);
+      map.color[value] = { variable: customProp, oklch };
+      map['background-color'][value] = { variable: customProp, oklch };
+      map['border-color'][value] = { variable: customProp, oklch };
     }
     
     if (customProp.includes('text') || customProp.includes('font') || isFontSizeValue(value)) {
@@ -58,18 +49,10 @@ function buildVariableMap() {
     }
     
     if (customProp.includes('space') || customProp.includes('padding') || customProp.includes('margin') || customProp.includes('gap') || isSpacingValue(value)) {
-      map['padding'][value] = { 
-        variable: customProp, 
-        step: inferSpacingStep(value) 
-      };
-      map['margin'][value] = { 
-        variable: customProp, 
-        step: inferSpacingStep(value) 
-      };
-      map['gap'][value] = { 
-        variable: customProp, 
-        step: inferSpacingStep(value) 
-      };
+      const tokenInfo = { variable: customProp, step: inferSpacingStep(value) };
+      map['padding'][value] = tokenInfo;
+      map['margin'][value] = tokenInfo;
+      map['gap'][value] = tokenInfo;
     }
     
     if (customProp.includes('radius') || isBorderRadiusValue(value)) {
@@ -89,7 +72,7 @@ function buildVariableMap() {
   
   variableMap = map;
   isBuilt = true;
-  console.log('[variable-map] Built dynamic map with', Object.keys(customProperties).length, 'variables');
+  console.log('[variable-map] Built dynamic map with', variableCount, 'variables');
   return map;
 }
 
@@ -181,16 +164,6 @@ function inferShadowScale(varName, value) {
   if (varName.includes('lg')) return 'lg';
   if (varName.includes('xl')) return 'xl';
   return 'md';
-}
-
-// Convert color values to OKLCH format
-function convertToOklch(value) {
-  // If already OKLCH, return as-is
-  if (value.startsWith('oklch(')) return value;
-  
-  // For other formats, we'd need conversion logic
-  // For now, return a sensible default
-  return 'oklch(0.5 0.15 0)';
 }
 
 export { variableMap, resolveTokensForElement, buildVariableMap };

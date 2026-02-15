@@ -1,35 +1,42 @@
+/**
+ * CSS Variable Detection for Elements
+ * 
+ * Finds all CSS custom properties used by a specific element
+ * by scanning stylesheets for matching rules.
+ */
+
+import { iterateStyleRules, safeMatches, extractVarReferences } from '../utils/stylesheet-scanner.js';
+
+/**
+ * Find all CSS variables used by an element
+ * 
+ * @param {Element} element - DOM element to inspect
+ * @returns {Array<{variable: string, property: string, currentValue: string, rawValue: string}>}
+ */
 function findCSSVariablesForElement(element) {
   const computed = window.getComputedStyle(element);
   const variables = [];
   
-  // Get all stylesheets and find rules that match this element
-  for (const sheet of document.styleSheets) {
-    try {
-      for (const rule of sheet.cssRules) {
-        if (rule.selectorText && element.matches(rule.selectorText)) {
-          // Check if any property values reference CSS variables
-          for (const prop of rule.style) {
-            const value = rule.style.getPropertyValue(prop);
-            const varMatches = value.match(/var\(--[^)]+\)/g);
-            if (varMatches) {
-              varMatches.forEach(v => {
-                const varName = v.match(/var\((--[^,)]+)/)?.[1];
-                if (varName) {
-                  const currentValue = computed.getPropertyValue(varName).trim();
-                  variables.push({
-                    variable: varName,
-                    property: prop,
-                    currentValue,
-                    rawValue: value
-                  });
-                }
-              });
-            }
-          }
-        }
+  for (const { rule } of iterateStyleRules()) {
+    // Check if this rule applies to the element
+    if (!rule.selectorText || !safeMatches(element, rule.selectorText)) {
+      continue;
+    }
+    
+    // Check each property for var() references
+    for (const prop of rule.style) {
+      const value = rule.style.getPropertyValue(prop);
+      const varNames = extractVarReferences(value);
+      
+      for (const varName of varNames) {
+        const currentValue = computed.getPropertyValue(varName).trim();
+        variables.push({
+          variable: varName,
+          property: prop,
+          currentValue,
+          rawValue: value
+        });
       }
-    } catch (e) {
-      // CORS-blocked stylesheets
     }
   }
   
