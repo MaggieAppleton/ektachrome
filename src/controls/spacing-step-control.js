@@ -8,9 +8,15 @@ class SpacingStepControl extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this._abortController = null;
   }
 
   connectedCallback() {
+    // Clean up any previous listeners
+    this._abortController?.abort();
+    this._abortController = new AbortController();
+    const signal = this._abortController.signal;
+
     const property = this.getAttribute('property'); // 'padding', 'margin', 'gap'
     const variable = this.getAttribute('variable');  // '--space-4'
     const baseUnit = parseInt(this.getAttribute('base-unit') || '4');
@@ -81,8 +87,13 @@ class SpacingStepControl extends HTMLElement {
         // Update active state
         this.shadowRoot.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
         step.classList.add('active');
-      });
+      }, { signal });
     });
+  }
+
+  disconnectedCallback() {
+    this._abortController?.abort();
+    this._abortController = null;
   }
 }
 

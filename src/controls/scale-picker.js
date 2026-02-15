@@ -15,9 +15,15 @@ class ScalePicker extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this._abortController = null;
   }
 
   connectedCallback() {
+    // Clean up any previous listeners
+    this._abortController?.abort();
+    this._abortController = new AbortController();
+    const signal = this._abortController.signal;
+
     const scaleName = this.getAttribute('scale') || 'typography';
     const variable = this.getAttribute('variable');
     const currentValue = this.getAttribute('current-value') || '';
@@ -134,8 +140,13 @@ class ScalePicker extends HTMLElement {
         // Update active state
         this.shadowRoot.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
         segment.classList.add('active');
-      });
+      }, { signal });
     });
+  }
+
+  disconnectedCallback() {
+    this._abortController?.abort();
+    this._abortController = null;
   }
 }
 
