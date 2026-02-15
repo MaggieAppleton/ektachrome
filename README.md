@@ -6,6 +6,54 @@ A design system refinement tool with live visual feedback. Select any element in
 
 Most design tools let you change any CSS property to any value. Ektachrome is different: it helps you **build, audit, and refine a design system** through direct manipulation. Every adjustment happens within structured constraints — spacing on a grid, colors mapped to tokens, typography on a scale — so the result is always a coherent system, not a collection of one-off overrides.
 
+## Installation
+
+```bash
+npm install ektachrome
+```
+
+## Usage Modes
+
+Ektachrome works in two modes:
+
+### Basic Mode
+
+Works in any project (React, Vue, Svelte, plain HTML). Import and initialise:
+
+```js
+import { Ektachrome } from 'ektachrome';
+
+const ektachrome = new Ektachrome();
+ektachrome.activate();
+```
+
+- Live editing works via CSS custom properties
+- Changes persist to localStorage across page reloads
+- Use "Copy CSS" to export changes manually
+
+### Enhanced Mode (Vite)
+
+If your project uses Vite, add the plugin for automatic write-back to source CSS files:
+
+```js
+// vite.config.js
+import { ektachromePlugin } from 'ektachrome/server/vite-plugin.js';
+
+export default {
+  plugins: [
+    ektachromePlugin({
+      include: ['src/**/*.css'],
+      exclude: ['node_modules/**']
+    })
+  ]
+}
+```
+
+With the plugin:
+- Changes are written directly to your CSS source files
+- Review diffs before committing
+- Full version control integration
+
 ## How It Works
 
 ### Two Phases
@@ -33,7 +81,7 @@ Once the design system is clean:
 2. **Inspect**: A toolbar popup shows which design tokens control the selected element's visual properties
 3. **Adjust**: Constrained controls let you tune each property — colors via OKLCH pickers (mapped to tokens), spacing via stepped grid controls, typography and radii via named scale pickers
 4. **Live update**: Every adjustment immediately calls `document.documentElement.style.setProperty()` on the CSS variable, so changes ripple across the entire app instantly
-5. **Commit**: When satisfied, serialize the adjusted token values and write them back to source files via Claude Code
+5. **Commit**: When satisfied, serialize the adjusted token values and write them back to source files
 
 ### Where Claude Sits
 
@@ -73,7 +121,7 @@ The live slider interaction is **zero latency, zero model involvement**. It's pu
 │       '--color-primary', 'oklch(0.6 0.2 250)'          │
 │     → Every element using this token updates instantly   │
 │                                                          │
-│  6. "Commit" → Claude writes new values to source        │
+│  6. "Commit" → Write new values to source files          │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -81,21 +129,35 @@ The live slider interaction is **zero latency, zero model involvement**. It's pu
 
 ```
 ektachrome/
-├── README.md                          # This file
 ├── src/
-│   ├── controls/                      # Web Components (framework-agnostic)
-│   │   ├── color-token-control.js     # OKLCH picker bound to design tokens
-│   │   ├── spacing-step-control.js    # Stepped spacing grid control
-│   │   ├── scale-picker.js            # Named scale picker (type, radii)
-│   │   └── toolbar-popup.js           # The popup that appears on element select
-│   ├── scanner/
-│   │   ├── design-system-audit.js     # Stylesheet scanner for audit phase
-│   │   ├── variable-map.js            # Cached token → computed value mapping
-│   │   └── detect-css-vars.js         # Pure JS CSS variable detection
+│   ├── index.js                    # Entry point
+│   ├── controls/                   # Web Components (Shadow DOM)
+│   │   ├── oklch-picker.js         # L/C/H color sliders
+│   │   ├── color-token-control.js  # Token-aware color control
+│   │   ├── spacing-step-control.js # Stepped spacing (4px grid)
+│   │   ├── scale-picker.js         # Type/radius scale picker
+│   │   ├── toolbar-popup.js        # Main UI + persistence
+│   │   └── commit-panel.js         # Pending changes UI for write-back
 │   ├── picker/
-│   │   └── element-picker.js          # Element selection and identification
-│   └── bridge/
-│       └── variable-discovery.js      # Claude API bridge for variable resolution
+│   │   └── element-picker.js       # Click-to-select element picker
+│   ├── scanner/
+│   │   ├── detect-css-vars.js      # Find CSS vars used by an element
+│   │   ├── variable-map.js         # Computed→token mapping
+│   │   └── design-system-audit.js  # Full stylesheet audit
+│   ├── bridge/
+│   │   └── variable-discovery.js   # Claude API fallback for var resolution
+│   └── utils/
+│       ├── config.js               # .env loader
+│       ├── color-conversion.js     # RGB↔OKLCH
+│       ├── stylesheet-scanner.js   # Shared iteration
+│       ├── property-categories.js  # Category matchers
+│       ├── theme.js                # UI constants
+│       ├── claude-client.js        # API client
+│       └── state-persistence.js    # localStorage + change tracking
+│
+└── server/                         # Vite plugin for write-back (Node.js)
+    ├── vite-plugin.js              # HTTP middleware endpoints
+    └── css-parser.js               # Parse and modify CSS files
 ```
 
 ## Constrained Control Types
@@ -155,36 +217,20 @@ The OKLCH picker and slider Web Components from [Kodachrome](https://github.com/
 
 The element selection pattern (click-to-select, hover highlights, element identification via class names/IDs/text content, CSS path generation) is adapted from [Agentation](https://github.com/benjitaylor/agentation), ported to be framework-agnostic.
 
-## Build Plan
+## Claude Integration (Optional)
 
-### Milestone 1: Element Picker + Variable Scanner
-- [ ] Port Agentation's element selection to vanilla JS
-- [ ] Build the CSS variable scanner (pure JS, no Claude)
-- [ ] Element highlight overlay on hover
-- [ ] Click to select → show element info
+Set `ANTHROPIC_API_KEY` in `.env` for:
+- **Audit** — Design system analysis
+- **Variable discovery** — Fallback when JS scanner fails
 
-### Milestone 2: Constrained Controls
-- [ ] `<color-token-control>` — OKLCH picker with token name + usage count
-- [ ] `<spacing-step-control>` — stepped grid with visual bar chart
-- [ ] `<scale-picker>` — horizontal segmented control for type sizes and radii
-- [ ] `<toolbar-popup>` — container that appears on element select
+## Write-Back Workflow (Enhanced Mode)
 
-### Milestone 3: Live Binding
-- [ ] Wire controls to `document.documentElement.style.setProperty()`
-- [ ] Build the variable map (computed value → token resolution)
-- [ ] Dynamic control generation based on element's resolved tokens
-- [ ] Test with a real app using CSS custom properties
-
-### Milestone 4: Audit Phase
-- [ ] Stylesheet scanner collects all values
-- [ ] Claude API integration for design system analysis
-- [ ] Audit report UI showing system health
-- [ ] Variable map generation and caching
-
-### Milestone 5: Commit Phase
-- [ ] Serialize adjusted values
-- [ ] Claude Code integration to write values back to source
-- [ ] Before/after diff preview
+1. Run your Vite dev server: `npm run dev`
+2. Activate Ektachrome in browser
+3. Click elements, adjust tokens
+4. Click the "changes" badge when ready
+5. Review diff, click "Commit All"
+6. Changes are written to your CSS files
 
 ## Prior Art
 
