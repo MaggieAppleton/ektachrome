@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ektachrome - Unit Tests</title>
+  <style>
+    :root {
+      /* Test CSS variables */
+      --test-color: oklch(0.62 0.21 255);
+      --test-spacing: 16px;
+      --test-radius: 8px;
+      --test-font-size: 1rem;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+    
+    h1 { color: #78c896; margin-bottom: 8px; }
+    h2 { color: #bbb; font-size: 14px; font-weight: normal; margin-bottom: 24px; }
+    
+    .test-suite {
+      margin-bottom: 32px;
+      background: #252525;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .suite-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #78c896;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #333;
+    }
+    
+    .test-result {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+      font-size: 13px;
+    }
+    
+    .test-result:last-child { border-bottom: none; }
+    
+    .test-result.pass .icon { color: #4ade80; }
+    .test-result.fail .icon { color: #f87171; }
+    .test-result.skip .icon { color: #fbbf24; }
+    
+    .icon { font-size: 16px; width: 20px; }
+    .test-name { flex: 1; }
+    .test-time { color: #666; font-size: 11px; }
+    
+    .error-details {
+      margin-top: 8px;
+      padding: 8px;
+      background: rgba(248, 113, 113, 0.1);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #f87171;
+      white-space: pre-wrap;
+    }
+    
+    .summary {
+      display: flex;
+      gap: 24px;
+      padding: 16px;
+      background: #252525;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    
+    .summary-item {
+      text-align: center;
+    }
+    
+    .summary-value {
+      font-size: 32px;
+      font-weight: 600;
+    }
+    
+    .summary-label {
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .passed .summary-value { color: #4ade80; }
+    .failed .summary-value { color: #f87171; }
+    .skipped .summary-value { color: #fbbf24; }
+    .total .summary-value { color: #78c896; }
+    
+    /* Hidden test fixtures */
+    #test-fixtures {
+      position: absolute;
+      left: -9999px;
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ektachrome Unit Tests</h1>
+  <h2>Automated browser-based tests for all modules</h2>
+  
+  <div class="summary" id="summary">
+    <div class="summary-item total">
+      <div class="summary-value" id="total-count">0</div>
+      <div class="summary-label">Total</div>
+    </div>
+    <div class="summary-item passed">
+      <div class="summary-value" id="pass-count">0</div>
+      <div class="summary-label">Passed</div>
+    </div>
+    <div class="summary-item failed">
+      <div class="summary-value" id="fail-count">0</div>
+      <div class="summary-label">Failed</div>
+    </div>
+    <div class="summary-item skipped">
+      <div class="summary-value" id="skip-count">0</div>
+      <div class="summary-label">Skipped</div>
+    </div>
+  </div>
+  
+  <div id="results"></div>
+  
+  <!-- Test fixtures for DOM-based tests -->
+  <div id="test-fixtures">
+    <div id="fixture-element" 
+         style="color: var(--test-color); padding: var(--test-spacing); border-radius: var(--test-radius);">
+      Test element
+    </div>
+  </div>
+
+  <script type="module">
+    // Simple test runner
+    class TestRunner {
+      constructor() {
+        this.suites = [];
+        this.results = { pass: 0, fail: 0, skip: 0, total: 0 };
+      }
+      
+      suite(name, fn) {
+        this.suites.push({ name, fn });
+      }
+      
+      async run() {
+        const resultsEl = document.getElementById('results');
+        resultsEl.innerHTML = '';
+        
+        for (const suite of this.suites) {
+          const suiteEl = document.createElement('div');
+          suiteEl.className = 'test-suite';
+          suiteEl.innerHTML = `<div class="suite-name">${suite.name}</div>`;
+          resultsEl.appendChild(suiteEl);
+          
+          const tests = [];
+          const test = (name, fn) => tests.push({ name, fn });
+          const skip = (name) => tests.push({ name, skip: true });
+          
+          // Collect tests
+          suite.fn(test, skip);
+          
+          // Run tests
+          for (const t of tests) {
+            this.results.total++;
+            const testEl = document.createElement('div');
+            testEl.className = 'test-result';
+            
+            if (t.skip) {
+              this.results.skip++;
+              testEl.classList.add('skip');
+              testEl.innerHTML = `
+                <span class="icon">○</span>
+                <span class="test-name">${t.name}</span>
+                <span class="test-time">skipped</span>
+              `;
+            } else {
+              const start = performance.now();
+              try {
+                await t.fn();
+                const time = (performance.now() - start).toFixed(1);
+                this.results.pass++;
+                testEl.classList.add('pass');
+                testEl.innerHTML = `
+                  <span class="icon">✓</span>
+                  <span class="test-name">${t.name}</span>
+                  <span class="test-time">${time}ms</span>
+                `;
+              } catch (err) {
+                const time = (performance.now() - start).toFixed(1);
+                this.results.fail++;
+                testEl.classList.add('fail');
+                testEl.innerHTML = `
+                  <span class="icon">✗</span>
+                  <span class="test-name">${t.name}</span>
+                  <span class="test-time">${time}ms</span>
+                  <div class="error-details">${err.message}\n${err.stack?.split('\n').slice(1, 3).join('\n') || ''}</div>
+                `;
+              }
+            }
+            suiteEl.appendChild(testEl);
+          }
+        }
+        
+        // Update summary
+        document.getElementById('total-count').textContent = this.results.total;
+        document.getElementById('pass-count').textContent = this.results.pass;
+        document.getElementById('fail-count').textContent = this.results.fail;
+        document.getElementById('skip-count').textContent = this.results.skip;
+        
+        // Log summary
+        console.log(`\n✅ ${this.results.pass} passed | ❌ ${this.results.fail} failed | ○ ${this.results.skip} skipped | Total: ${this.results.total}`);
+      }
+    }
+    
+    // Assertion helpers
+    function assert(condition, message = 'Assertion failed') {
+      if (!condition) throw new Error(message);
+    }
+    
+    function assertEqual(actual, expected, message) {
+      if (actual !== expected) {
+        throw new Error(message || `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+      }
+    }
+    
+    function assertDeepEqual(actual, expected, message) {
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(message || `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+      }
+    }
+    
+    function assertThrows(fn, message = 'Expected function to throw') {
+      let threw = false;
+      try { fn(); } catch { threw = true; }
+      if (!threw) throw new Error(message);
+    }
+    
+    function assertInRange(value, min, max, message) {
+      if (value < min || value > max) {
+        throw new Error(message || `Expected ${value} to be between ${min} and ${max}`);
+      }
+    }
+    
+    // Import modules under test
+    import { cssToOklch, rgbToOklch, parseColorToRgb } from '../src/utils/color-conversion.js';
+    import { iterateStyleRules, iterateRootCustomProperties, extractVarReferences, safeMatches } from '../src/utils/stylesheet-scanner.js';
+    import { PROPERTY_CATEGORIES, CATEGORY_MATCHERS, CATEGORY_LABELS } from '../src/utils/property-categories.js';
+    import { THEME, baseStyles } from '../src/utils/theme.js';
+    import { createPersistence } from '../src/utils/state-persistence.js';
+    import { getConfig, setConfig, loadConfig } from '../src/utils/config.js';
+    
+    const runner = new TestRunner();
+    
+    // =========================================================================
+    // Color Conversion Tests
+    // =========================================================================
+    runner.suite('Color Conversion (color-conversion.js)', (test, skip) => {
+      test('parseColorToRgb: parses hex colors', () => {
+        const rgb = parseColorToRgb('#ff0000');
+        assertEqual(rgb.r, 255);
+        assertEqual(rgb.g, 0);
+        assertEqual(rgb.b, 0);
+      });
+      
+      test('parseColorToRgb: parses rgb() colors', () => {
+        const rgb = parseColorToRgb('rgb(128, 64, 32)');
+        assertEqual(rgb.r, 128);
+        assertEqual(rgb.g, 64);
+        assertEqual(rgb.b, 32);
+      });
+      
+      test('parseColorToRgb: handles named colors', () => {
+        const rgb = parseColorToRgb('red');
+        assertEqual(rgb.r, 255);
+        assertEqual(rgb.g, 0);
+        assertEqual(rgb.b, 0);
+      });
+      
+      test('parseColorToRgb: returns null for invalid input', () => {
+        const rgb = parseColorToRgb('not-a-color-12345');
+        assertEqual(rgb, null);
+      });
+      
+      test('rgbToOklch: converts red correctly', () => {
+        const oklch = rgbToOklch(255, 0, 0);
+        assertInRange(oklch.l, 0.6, 0.7, 'Red lightness should be ~0.63');
+        assertInRange(oklch.c, 0.2, 0.3, 'Red chroma should be ~0.26');
+        assertInRange(oklch.h, 25, 35, 'Red hue should be ~29');
+      });
+      
+      test('rgbToOklch: converts white correctly', () => {
+        const oklch = rgbToOklch(255, 255, 255);
+        assertInRange(oklch.l, 0.99, 1.01, 'White lightness should be ~1.0');
+        assertInRange(oklch.c, 0, 0.01, 'White chroma should be ~0');
+      });
+      
+      test('rgbToOklch: converts black correctly', () => {
+        const oklch = rgbToOklch(0, 0, 0);
+        assertInRange(oklch.l, 0, 0.01, 'Black lightness should be ~0');
+        assertInRange(oklch.c, 0, 0.01, 'Black chroma should be ~0');
+      });
+      
+      test('cssToOklch: converts CSS color string', () => {
+        const oklch = cssToOklch('#00ff00'); // Pure green
+        assert(oklch !== null, 'Should return OKLCH object');
+        assertInRange(oklch.l, 0.85, 0.9, 'Green lightness should be ~0.87');
+      });
+      
+      test('cssToOklch: returns null for invalid CSS', () => {
+        const oklch = cssToOklch('invalid');
+        assertEqual(oklch, null);
+      });
+    });
+    
+    // =========================================================================
+    // Stylesheet Scanner Tests
+    // =========================================================================
+    runner.suite('Stylesheet Scanner (stylesheet-scanner.js)', (test, skip) => {
+      test('extractVarReferences: extracts single var()', () => {
+        const refs = extractVarReferences('var(--color-primary)');
+        assertDeepEqual(refs, ['--color-primary']);
+      });
+      
+      test('extractVarReferences: extracts multiple vars', () => {
+        const refs = extractVarReferences('var(--a) var(--b)');
+        assertDeepEqual(refs, ['--a', '--b']);
+      });
+      
+      test('extractVarReferences: handles var with fallback', () => {
+        const refs = extractVarReferences('var(--color, red)');
+        assertDeepEqual(refs, ['--color']);
+      });
+      
+      test('extractVarReferences: returns empty array for no vars', () => {
+        const refs = extractVarReferences('16px solid blue');
+        assertDeepEqual(refs, []);
+      });
+      
+      test('safeMatches: returns true for matching selector', () => {
+        const el = document.getElementById('fixture-element');
+        assert(safeMatches(el, '#fixture-element'), 'Should match by ID');
+        assert(safeMatches(el, 'div'), 'Should match by tag');
+      });
+      
+      test('safeMatches: returns false for non-matching selector', () => {
+        const el = document.getElementById('fixture-element');
+        assert(!safeMatches(el, '.nonexistent'), 'Should not match nonexistent class');
+      });
+      
+      test('safeMatches: returns false for invalid selector', () => {
+        const el = document.getElementById('fixture-element');
+        assert(!safeMatches(el, '[[[invalid'), 'Should return false for invalid selector');
+      });
+      
+      test('iterateStyleRules: yields rule objects', () => {
+        let count = 0;
+        for (const item of iterateStyleRules()) {
+          count++;
+          assert(item.rule !== undefined, 'Should have rule property');
+          assert(item.sheet !== undefined, 'Should have sheet property');
+          if (count > 5) break; // Just check a few
+        }
+        assert(count > 0, 'Should iterate at least some rules');
+      });
+      
+      test('iterateRootCustomProperties: finds :root custom properties', () => {
+        const props = {};
+        for (const { name, value } of iterateRootCustomProperties()) {
+          props[name] = value;
+        }
+        assert('--test-color' in props, 'Should find --test-color');
+        assert('--test-spacing' in props, 'Should find --test-spacing');
+      });
+    });
+    
+    // =========================================================================
+    // Property Categories Tests
+    // =========================================================================
+    runner.suite('Property Categories (property-categories.js)', (test, skip) => {
+      test('CATEGORY_MATCHERS: color matches color properties', () => {
+        assert(CATEGORY_MATCHERS.color.test('color'));
+        assert(CATEGORY_MATCHERS.color.test('backgroundColor'));
+        assert(CATEGORY_MATCHERS.color.test('border-color'));
+        assert(!CATEGORY_MATCHERS.color.test('padding'));
+      });
+      
+      test('CATEGORY_MATCHERS: spacing matches spacing properties', () => {
+        assert(CATEGORY_MATCHERS.spacing.test('padding'));
+        assert(CATEGORY_MATCHERS.spacing.test('margin-top'));
+        assert(CATEGORY_MATCHERS.spacing.test('gap'));
+        assert(!CATEGORY_MATCHERS.spacing.test('color'));
+      });
+      
+      test('CATEGORY_MATCHERS: type matches typography properties', () => {
+        assert(CATEGORY_MATCHERS.type.test('font-size'));
+        assert(CATEGORY_MATCHERS.type.test('fontSize'));
+        assert(CATEGORY_MATCHERS.type.test('line-height'));
+        assert(!CATEGORY_MATCHERS.type.test('padding'));
+      });
+      
+      test('CATEGORY_MATCHERS: radius matches border-radius', () => {
+        assert(CATEGORY_MATCHERS.radius.test('border-radius'));
+        assert(CATEGORY_MATCHERS.radius.test('borderRadius'));
+        assert(!CATEGORY_MATCHERS.radius.test('border-color'));
+      });
+      
+      test('CATEGORY_MATCHERS: animation matches animation properties', () => {
+        assert(CATEGORY_MATCHERS.animation.test('transition-duration'));
+        assert(CATEGORY_MATCHERS.animation.test('animation-timing-function'));
+        assert(CATEGORY_MATCHERS.animation.test('transition'));
+        assert(!CATEGORY_MATCHERS.animation.test('color'));
+      });
+      
+      test('CATEGORY_LABELS: has labels for all categories', () => {
+        assertEqual(CATEGORY_LABELS.color, 'Color');
+        assertEqual(CATEGORY_LABELS.spacing, 'Spacing');
+        assertEqual(CATEGORY_LABELS.type, 'Type');
+        assertEqual(CATEGORY_LABELS.radius, 'Radius');
+        assertEqual(CATEGORY_LABELS.animation, 'Motion');
+      });
+      
+      test('PROPERTY_CATEGORIES: has expected structure', () => {
+        assert(Array.isArray(PROPERTY_CATEGORIES.color));
+        assert(PROPERTY_CATEGORIES.color.length > 0);
+        assert(PROPERTY_CATEGORIES.color.includes('color'));
+        assert(Array.isArray(PROPERTY_CATEGORIES.animation));
+        assert(PROPERTY_CATEGORIES.animation.includes('transition-duration'));
+      });
+    });
+    
+    // =========================================================================
+    // Theme Tests
+    // =========================================================================
+    runner.suite('Theme (theme.js)', (test, skip) => {
+      test('THEME: has colors object', () => {
+        assert(THEME.colors !== undefined);
+        assert(THEME.colors.surface !== undefined);
+        assert(THEME.colors.text !== undefined);
+      });
+      
+      test('THEME: has fonts object', () => {
+        assert(THEME.fonts !== undefined);
+        assert(THEME.fonts.mono !== undefined);
+        assert(THEME.fonts.sans !== undefined);
+      });
+      
+      test('baseStyles: returns non-empty CSS string', () => {
+        const css = baseStyles();
+        assert(typeof css === 'string');
+        assert(css.length > 0);
+        assert(css.includes(':host'));
+      });
+    });
+    
+    // =========================================================================
+    // State Persistence Tests
+    // =========================================================================
+    runner.suite('State Persistence (state-persistence.js)', (test, skip) => {
+      const testSessionId = 'ektachrome-unit-test-' + Date.now();
+      
+      test('createPersistence: returns object with load/save/clear', () => {
+        const p = createPersistence(testSessionId);
+        assert(typeof p.load === 'function');
+        assert(typeof p.save === 'function');
+        assert(typeof p.clear === 'function');
+      });
+      
+      test('persistence: save and load roundtrip', () => {
+        const p = createPersistence(testSessionId);
+        const data = { variables: { '--test': 'value' } };
+        p.save(data);
+        const loaded = p.load();
+        assertDeepEqual(loaded, data);
+        p.clear(); // cleanup
+      });
+      
+      test('persistence: load returns null when empty', () => {
+        const p = createPersistence(testSessionId + '-empty');
+        assertEqual(p.load(), null);
+      });
+      
+      test('persistence: clear removes saved state', () => {
+        const p = createPersistence(testSessionId + '-clear');
+        p.save({ test: true });
+        p.clear();
+        assertEqual(p.load(), null);
+      });
+    });
+    
+    // =========================================================================
+    // Config Tests
+    // =========================================================================
+    runner.suite('Config (config.js)', (test, skip) => {
+      test('getConfig: returns null for unknown key', () => {
+        assertEqual(getConfig('NONEXISTENT_KEY_12345'), null);
+      });
+      
+      test('setConfig: sets and retrieves value', () => {
+        setConfig('TEST_KEY', 'test_value');
+        assertEqual(getConfig('TEST_KEY'), 'test_value');
+      });
+      
+      test('loadConfig: returns config object', async () => {
+        const config = await loadConfig();
+        assert(typeof config === 'object');
+      });
+    });
+    
+    // =========================================================================
+    // Web Component Tests
+    // =========================================================================
+    runner.suite('Web Components', (test, skip) => {
+      test('oklch-picker: is registered', () => {
+        assert(customElements.get('oklch-picker') !== undefined);
+      });
+      
+      test('color-token-control: is registered', () => {
+        assert(customElements.get('color-token-control') !== undefined);
+      });
+      
+      test('spacing-step-control: is registered', () => {
+        assert(customElements.get('spacing-step-control') !== undefined);
+      });
+      
+      test('scale-picker: is registered', () => {
+        assert(customElements.get('scale-picker') !== undefined);
+      });
+      
+      test('toolbar-popup: is registered', () => {
+        assert(customElements.get('toolbar-popup') !== undefined);
+      });
+      
+      test('oklch-picker: creates element with shadow DOM', () => {
+        const el = document.createElement('oklch-picker');
+        document.body.appendChild(el);
+        assert(el.shadowRoot !== null);
+        el.remove();
+      });
+      
+      test('oklch-picker: has l, c, h properties', () => {
+        const el = document.createElement('oklch-picker');
+        el.setAttribute('lightness', '0.5');
+        el.setAttribute('chroma', '0.15');
+        el.setAttribute('hue', '200');
+        document.body.appendChild(el);
+        assertEqual(el.l, 0.5);
+        assertEqual(el.c, 0.15);
+        assertEqual(el.h, 200);
+        el.remove();
+      });
+    });
+    
+    // =========================================================================
+    // OKLCH Picker Internal Tests
+    // =========================================================================
+    runner.suite('OKLCH Picker Conversion', (test, skip) => {
+      test('_oklchToRgb: converts L=0.5, C=0, H=0 to gray', async () => {
+        const el = document.createElement('oklch-picker');
+        document.body.appendChild(el);
+        await new Promise(r => setTimeout(r, 0)); // Wait for connectedCallback
+        
+        const rgb = el._oklchToRgb(0.5, 0, 0);
+        // Gray should have equal r, g, b values
+        assertInRange(Math.abs(rgb.r - rgb.g), 0, 5, 'R and G should be close for gray');
+        assertInRange(Math.abs(rgb.g - rgb.b), 0, 5, 'G and B should be close for gray');
+        
+        el.remove();
+      });
+      
+      test('_oklchToRgb: L=0 gives black', async () => {
+        const el = document.createElement('oklch-picker');
+        document.body.appendChild(el);
+        await new Promise(r => setTimeout(r, 0));
+        
+        const rgb = el._oklchToRgb(0, 0, 0);
+        assertEqual(rgb.r, 0);
+        assertEqual(rgb.g, 0);
+        assertEqual(rgb.b, 0);
+        
+        el.remove();
+      });
+      
+      test('_oklchToRgb: L=1 gives white', async () => {
+        const el = document.createElement('oklch-picker');
+        document.body.appendChild(el);
+        await new Promise(r => setTimeout(r, 0));
+        
+        const rgb = el._oklchToRgb(1, 0, 0);
+        assertEqual(rgb.r, 255);
+        assertEqual(rgb.g, 255);
+        assertEqual(rgb.b, 255);
+        
+        el.remove();
+      });
+      
+      test('_oklchToRgb: clamps out-of-gamut colors', async () => {
+        const el = document.createElement('oklch-picker');
+        document.body.appendChild(el);
+        await new Promise(r => setTimeout(r, 0));
+        
+        // High chroma at certain lightness can be out of sRGB gamut
+        const rgb = el._oklchToRgb(0.9, 0.35, 150);
+        assertInRange(rgb.r, 0, 255, 'R should be clamped');
+        assertInRange(rgb.g, 0, 255, 'G should be clamped');
+        assertInRange(rgb.b, 0, 255, 'B should be clamped');
+        
+        el.remove();
+      });
+    });
+    
+    // Run all tests
+    runner.run();
+  </script>
+  
+  <!-- Import components to register them -->
+  <script type="module">
+    import '../src/controls/oklch-picker.js';
+    import '../src/controls/color-token-control.js';
+    import '../src/controls/spacing-step-control.js';
+    import '../src/controls/scale-picker.js';
+    import '../src/controls/toolbar-popup.js';
+  </script>
+</body>
+</html>
