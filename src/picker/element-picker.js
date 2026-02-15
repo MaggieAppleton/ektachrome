@@ -35,6 +35,7 @@ export class ElementPicker {
     // Bound handlers for clean add/remove
     this._onMouseMove = this._onMouseMove.bind(this);
     this._onMouseDown = this._onMouseDown.bind(this);
+    this._onClick = this._onClick.bind(this);
     this._onKeyDown = this._onKeyDown.bind(this);
   }
 
@@ -47,6 +48,7 @@ export class ElementPicker {
     this._createTooltip();
     document.addEventListener('mousemove', this._onMouseMove, true);
     document.addEventListener('mousedown', this._onMouseDown, true);
+    document.addEventListener('click', this._onClick, true);
     document.addEventListener('keydown', this._onKeyDown, true);
   }
 
@@ -57,6 +59,7 @@ export class ElementPicker {
     this._cachedName = null;
     document.removeEventListener('mousemove', this._onMouseMove, true);
     document.removeEventListener('mousedown', this._onMouseDown, true);
+    document.removeEventListener('click', this._onClick, true);
     document.removeEventListener('keydown', this._onKeyDown, true);
     this._removeOverlay();
     this._removeTooltip();
@@ -96,6 +99,16 @@ export class ElementPicker {
     const info = this._buildElementInfo(el);
     this.deactivate();
     this.onSelect(info);
+  }
+
+  /** Prevent click events from triggering actions on links/buttons */
+  _onClick(e) {
+    const el = this._deepElementFromPoint(e.clientX, e.clientY);
+    if (!el || this._shouldIgnore(el)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
   }
 
   _onKeyDown(e) {
