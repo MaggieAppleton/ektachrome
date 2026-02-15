@@ -333,17 +333,18 @@ class CommitPanel extends HTMLElement {
       .panel {
         position: relative;
         background: ${THEME.colorBgPopup};
+        backdrop-filter: ${THEME.backdropBlur};
+        -webkit-backdrop-filter: ${THEME.backdropBlur};
         border: 1px solid ${THEME.colorBorder};
         border-radius: ${THEME.radiusLg};
-        padding: 16px;
         min-width: 320px;
         max-width: 480px;
         max-height: 80vh;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
         font-family: ${THEME.fontSystem};
         color: ${THEME.colorText};
+        overflow: hidden;
       }
       
       /* Header */
@@ -351,48 +352,51 @@ class CommitPanel extends HTMLElement {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid ${THEME.colorBorderSubtle};
+        padding: 10px 12px 8px;
+        border-bottom: 1px solid ${THEME.colorBorder};
       }
       
       .title {
-        font-size: ${THEME.fontSizeXl};
+        font-size: ${THEME.fontSizeMd};
         font-weight: 500;
+        letter-spacing: 0.02em;
       }
       
       .close {
         background: none;
         border: none;
-        color: ${THEME.colorTextFaint};
-        font-size: 18px;
+        color: ${THEME.colorTextDim};
+        font-size: 14px;
         cursor: pointer;
-        padding: 0 4px;
+        padding: 2px 6px;
         line-height: 1;
+        opacity: 0.5;
+        transition: opacity 0.15s ease;
       }
       
       .close:hover {
-        color: ${THEME.colorText};
+        opacity: 1;
       }
       
       /* Changes list */
       .changes-list {
         flex: 1;
         overflow-y: auto;
-        margin-bottom: 12px;
+        padding: 8px 12px;
       }
       
       .empty {
-        font-size: ${THEME.fontSizeLg};
-        color: ${THEME.colorTextFaint};
+        font-size: ${THEME.fontSizeMd};
+        color: ${THEME.colorTextDim};
         text-align: center;
         padding: 24px;
       }
       
       .change-item {
         padding: 8px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         background: ${THEME.colorBgSubtle};
+        border: 1px solid ${THEME.colorBorder};
         border-radius: ${THEME.radiusMd};
       }
       
@@ -405,23 +409,22 @@ class CommitPanel extends HTMLElement {
       
       .var-name {
         font-family: ${THEME.fontMono};
-        font-size: ${THEME.fontSizeLg};
-        color: ${THEME.colorActiveText};
+        font-size: ${THEME.fontSizeSm};
+        color: ${THEME.colorTextMuted};
       }
       
       .revert-btn {
         background: none;
         border: none;
-        color: ${THEME.colorTextFaint};
+        color: ${THEME.colorTextDim};
         font-size: 14px;
         cursor: pointer;
         padding: 2px 6px;
         border-radius: ${THEME.radiusSm};
-        transition: background 0.1s, color 0.1s;
+        transition: color 0.15s ease;
       }
       
       .revert-btn:hover {
-        background: ${THEME.colorBgHover};
         color: ${THEME.colorText};
       }
       
@@ -430,20 +433,20 @@ class CommitPanel extends HTMLElement {
         align-items: center;
         gap: 8px;
         font-family: ${THEME.fontMono};
-        font-size: ${THEME.fontSizeSm};
+        font-size: ${THEME.fontSizeXs};
       }
       
       .old-value {
-        color: rgba(255, 120, 100, 0.8);
+        color: ${THEME.colorTextDim};
         text-decoration: line-through;
       }
       
       .arrow {
-        color: ${THEME.colorTextFaint};
+        color: ${THEME.colorTextDim};
       }
       
       .new-value {
-        color: rgba(120, 200, 150, 0.9);
+        color: ${THEME.colorText};
       }
       
       /* Footer */
@@ -451,64 +454,67 @@ class CommitPanel extends HTMLElement {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
-        padding-top: 12px;
+        padding: 8px 12px;
         border-top: 1px solid ${THEME.colorBorderSubtle};
       }
       
       .btn {
         font-family: ${THEME.fontSystem};
-        font-size: ${THEME.fontSizeLg};
-        padding: 6px 12px;
+        font-size: ${THEME.fontSizeSm};
+        padding: 8px 10px;
         border-radius: ${THEME.radiusMd};
-        border: none;
+        border: 1px solid ${THEME.colorBorder};
         cursor: pointer;
-        transition: background 0.1s, opacity 0.1s;
+        transition: color 0.15s ease, border-color 0.15s ease;
+        background: transparent;
+        line-height: 1;
       }
       
       .btn:disabled {
-        opacity: 0.5;
+        opacity: 0.4;
         cursor: not-allowed;
       }
       
       .btn-secondary {
-        background: ${THEME.colorBgSubtle};
         color: ${THEME.colorTextMuted};
       }
       
       .btn-secondary:hover:not(:disabled) {
-        background: ${THEME.colorBgHover};
         color: ${THEME.colorText};
+        border-color: ${THEME.colorBorderHover};
       }
       
       .btn-primary {
-        background: ${THEME.colorActive};
-        color: ${THEME.colorText};
+        color: ${THEME.colorTextMuted};
       }
       
       .btn-primary:hover:not(:disabled) {
-        background: rgba(120, 200, 150, 0.4);
+        color: ${THEME.colorText};
+        border-color: ${THEME.colorBorderHover};
       }
       
       /* Toast */
       .toast {
         position: absolute;
-        bottom: 16px;
+        bottom: 12px;
         left: 50%;
         transform: translateX(-50%);
         padding: 8px 16px;
         border-radius: ${THEME.radiusMd};
-        font-size: ${THEME.fontSizeLg};
+        font-size: ${THEME.fontSizeSm};
         animation: toast-in 0.2s ease-out;
+        border: 1px solid ${THEME.colorBorder};
+        background: ${THEME.colorBgPopup};
+        backdrop-filter: ${THEME.backdropBlur};
       }
       
       .toast-success {
-        background: rgba(120, 200, 150, 0.3);
-        color: rgba(120, 200, 150, 0.9);
+        color: ${THEME.colorText};
       }
       
       .toast-error {
-        background: rgba(255, 120, 100, 0.3);
-        color: rgba(255, 180, 150, 0.9);
+        color: ${THEME.colorDanger};
+        border-color: rgba(255, 107, 107, 0.3);
       }
       
       @keyframes toast-in {

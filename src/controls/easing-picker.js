@@ -185,7 +185,7 @@ class EasingPicker extends HTMLElement {
       }
       
       .label {
-        font-size: ${THEME.fontSizeMd};
+        font-size: ${THEME.fontSizeSm};
         font-family: ${THEME.fontMono};
         color: ${THEME.colorTextMuted};
         margin-bottom: 6px;
@@ -199,19 +199,21 @@ class EasingPicker extends HTMLElement {
       
       .curve {
         background: ${THEME.colorBgSubtle};
+        border: 1px solid ${THEME.colorBorder};
         border-radius: ${THEME.radiusMd};
         padding: 6px 4px 4px;
         cursor: pointer;
-        transition: background 0.1s;
+        transition: background 0.15s ease, border-color 0.15s ease;
         text-align: center;
       }
       
       .curve:hover {
-        background: ${THEME.colorBgHover};
+        border-color: ${THEME.colorBorderHover};
       }
       
       .curve.active {
-        background: rgba(120, 180, 220, 0.3);
+        background: ${THEME.colorBgActive};
+        border-color: ${THEME.colorText};
       }
       
       .curve canvas {

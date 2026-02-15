@@ -1,13 +1,14 @@
 /* Test fixture for CSS parser tests */
 :root {
-  --color-primary: oklch(0.6 0.2 250);
-  --color-secondary: oklch(0.5 0.15 180);
-  --color-text: oklch(0.2 0.02 260);
-  --space-4: 16px;
+  --color-primary: oklch(0.379 0.241 203);
+  --color-secondary: oklch(0.638 0.104 131);
+  --color-text: oklch(0.424 0.02 80);
+  --space-4: 1.125rem;
   --space-8: 32px;
-  --radius-sm: 2px;
-  --radius-md: 4px;
+  --radius-sm: 12px;
+  --radius-md: 8px;
   --font-size-base: 16px;
+  --moss: rgb(255, 255, 255);
 }
 
 .dark {

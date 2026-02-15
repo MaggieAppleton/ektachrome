@@ -569,88 +569,96 @@ class ToolbarPopup extends HTMLElement {
       }
       .popup {
         position: relative;
-        background: rgba(28, 28, 30, 0.95);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 12px;
-        min-width: 280px;
-        max-width: 360px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        font-family: -apple-system, 'SF Pro', sans-serif;
-        color: rgba(232, 228, 222, 0.9);
-        backdrop-filter: blur(12px);
+        background: ${THEME.colorBgPopup};
+        backdrop-filter: ${THEME.backdropBlur};
+        -webkit-backdrop-filter: ${THEME.backdropBlur};
+        border: 1px solid ${THEME.colorBorder};
+        border-radius: ${THEME.radiusLg};
+        overflow: hidden;
+        min-width: ${THEME.panelWidth};
+        max-width: 320px;
+        font-family: ${THEME.fontSystem};
+        font-size: ${THEME.fontSizeMd};
+        color: ${THEME.colorText};
         box-sizing: border-box;
       }
 
       /* Header */
-      .header { margin-bottom: 8px; }
+      .header {
+        padding: 10px 12px 8px;
+        border-bottom: 1px solid ${THEME.colorBorder};
+      }
       .el-name {
-        font-size: 12px;
+        font-size: ${THEME.fontSizeMd};
         font-weight: 500;
-        margin-bottom: 2px;
+        letter-spacing: 0.02em;
+        margin: 0 0 2px;
       }
       .el-path {
-        font-family: 'SF Mono', monospace;
-        font-size: 10px;
-        color: rgba(232, 228, 222, 0.4);
-        margin-bottom: 8px;
+        font-family: ${THEME.fontMono};
+        font-size: ${THEME.fontSizeXs};
+        color: ${THEME.colorTextDim};
         word-break: break-all;
       }
       .reset-btn {
-        font-size: 9px;
-        padding: 2px 8px;
-        border-radius: 4px;
+        font-size: ${THEME.fontSizeXs};
+        padding: 4px 8px;
+        border-radius: ${THEME.radiusMd};
         cursor: pointer;
-        border: none;
-        background: rgba(255, 120, 100, 0.15);
-        color: rgba(255, 180, 150, 0.8);
+        border: 1px solid rgba(255, 107, 107, 0.3);
+        background: transparent;
+        color: ${THEME.colorTextFaint};
         font-family: inherit;
-        transition: background 0.1s;
+        transition: color 0.15s ease, border-color 0.15s ease;
+        margin-top: 6px;
       }
       .reset-btn:hover {
-        background: rgba(255, 120, 100, 0.25);
+        color: ${THEME.colorDanger};
+        border-color: rgba(255, 107, 107, 0.5);
       }
 
       /* Tabs */
       .tabs {
         display: flex;
-        gap: 4px;
-        margin-bottom: 0;
+        gap: 0;
+        padding: 0 12px;
+        border-bottom: 1px solid ${THEME.colorBorderSubtle};
       }
       .tab {
-        font-size: 11px;
-        padding: 4px 10px;
-        border-radius: 4px;
+        font-size: ${THEME.fontSizeMd};
+        padding: 8px 10px;
+        border-radius: 0;
         cursor: pointer;
         border: none;
-        background: rgba(255, 255, 255, 0.06);
-        color: rgba(232, 228, 222, 0.5);
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: ${THEME.colorTextFaint};
         font-family: inherit;
-        transition: background 0.1s, color 0.1s;
+        transition: color 0.15s ease, border-color 0.15s ease;
+        margin-bottom: -1px;
       }
       .tab:hover {
-        background: rgba(255, 255, 255, 0.12);
-        color: rgba(232, 228, 222, 0.7);
+        color: ${THEME.colorTextMuted};
       }
       .tab.active {
-        background: rgba(120, 200, 150, 0.2);
-        color: rgba(232, 228, 222, 0.9);
+        color: ${THEME.colorText};
+        border-bottom-color: ${THEME.colorText};
       }
 
       /* Content area */
       .content {
-        margin-top: 8px;
+        padding: 8px 12px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 6px;
       }
 
       /* Empty state */
       .empty {
-        font-size: 11px;
-        color: rgba(232, 228, 222, 0.4);
+        font-size: ${THEME.fontSizeMd};
+        color: ${THEME.colorTextDim};
         line-height: 1.5;
-        padding: 8px 0;
+        padding: 12px;
       }
 
       /* Close button */
@@ -660,15 +668,17 @@ class ToolbarPopup extends HTMLElement {
         right: 8px;
         background: none;
         border: none;
-        color: rgba(232, 228, 222, 0.4);
-        font-size: 16px;
+        color: ${THEME.colorTextDim};
+        font-size: 14px;
         cursor: pointer;
-        padding: 0 4px;
+        padding: 2px 6px;
         line-height: 1;
         font-family: inherit;
+        opacity: 0.5;
+        transition: opacity 0.15s ease;
       }
       .close:hover {
-        color: rgba(232, 228, 222, 0.9);
+        opacity: 1;
       }
 
       /* Commit badge */
@@ -676,33 +686,35 @@ class ToolbarPopup extends HTMLElement {
         position: absolute;
         bottom: 8px;
         right: 8px;
-        font-size: 9px;
-        padding: 3px 8px;
-        border-radius: 10px;
+        font-size: ${THEME.fontSizeXs};
+        padding: 4px 10px;
+        border-radius: ${THEME.radiusMd};
         cursor: pointer;
-        border: none;
-        background: rgba(120, 200, 150, 0.2);
-        color: rgba(120, 200, 150, 0.9);
+        border: 1px solid ${THEME.colorBorder};
+        background: ${THEME.colorBgPopup};
+        backdrop-filter: ${THEME.backdropBlur};
+        color: ${THEME.colorTextMuted};
         font-family: inherit;
         font-weight: 500;
-        transition: background 0.1s;
+        transition: color 0.15s ease, border-color 0.15s ease;
       }
       .commit-badge:hover {
-        background: rgba(120, 200, 150, 0.35);
+        color: ${THEME.colorText};
+        border-color: ${THEME.colorBorderHover};
       }
 
       /* Hardcoded values section */
       .hardcoded-section {
-        margin-top: 12px;
-        padding-top: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 8px 12px;
+        border-top: 1px solid ${THEME.colorBorderSubtle};
       }
       .section-title {
-        font-size: 10px;
-        color: rgba(232, 228, 222, 0.5);
-        margin-bottom: 8px;
+        font-size: ${THEME.fontSizeXs};
+        font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.08em;
+        color: ${THEME.colorTextDim};
+        margin: 0 0 8px 0;
       }
       .hardcoded-item {
         display: flex;
@@ -711,31 +723,32 @@ class ToolbarPopup extends HTMLElement {
         padding: 4px 0;
       }
       .hardcoded-prop {
-        font-family: 'SF Mono', monospace;
-        font-size: 10px;
-        color: rgba(232, 228, 222, 0.7);
+        font-family: ${THEME.fontMono};
+        font-size: ${THEME.fontSizeSm};
+        color: ${THEME.colorTextMuted};
         min-width: 80px;
       }
       .hardcoded-value {
-        font-family: 'SF Mono', monospace;
-        font-size: 10px;
-        color: rgba(232, 228, 222, 0.4);
+        font-family: ${THEME.fontMono};
+        font-size: ${THEME.fontSizeSm};
+        color: ${THEME.colorTextFaint};
         flex: 1;
       }
       .create-token-btn {
-        font-size: 9px;
-        padding: 2px 8px;
-        border-radius: 4px;
+        font-size: ${THEME.fontSizeXs};
+        padding: 4px 8px;
+        border-radius: ${THEME.radiusMd};
         cursor: pointer;
-        border: none;
-        background: rgba(120, 180, 220, 0.15);
-        color: rgba(120, 180, 220, 0.9);
+        border: 1px solid ${THEME.colorBorder};
+        background: transparent;
+        color: ${THEME.colorTextMuted};
         font-family: inherit;
-        transition: background 0.1s;
+        transition: color 0.15s ease, border-color 0.15s ease;
         white-space: nowrap;
       }
       .create-token-btn:hover {
-        background: rgba(120, 180, 220, 0.25);
+        color: ${THEME.colorText};
+        border-color: ${THEME.colorBorderHover};
       }
     `;
   }

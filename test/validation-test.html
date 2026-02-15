@@ -365,46 +365,13 @@
       auditBtn.disabled = true;
       status.textContent = 'Running design system audit...';
       
-      const startTime = performance.now();
-      
       try {
-        const report = await ek.audit();
-        const duration = Math.round(performance.now() - startTime);
-        
-        console.group('🔍 Design System Audit Report');
-        console.log('Duration:', duration + 'ms');
-        console.log('Summary:', report.summary);
-        console.log('Basic Analysis:', report.basicAnalysis);
-        if (report.claudeAnalysis) {
-          console.log('Claude Analysis:', report.claudeAnalysis);
-        }
-        console.log('Recommendations:', report.recommendations);
-        console.groupEnd();
-        
-        // Show summary alert
-        const summary = report.summary;
-        const analysis = report.basicAnalysis;
-        alert(`✅ Design System Audit Complete (${duration}ms)
-
-📊 Summary:
-• ${summary.totalVariables} CSS variables defined
-• ${summary.usedVariables} variables in use (${Math.round(analysis.variableUsageRate * 100)}%)
-• ${summary.unusedVariables} unused variables
-• ${summary.rawColorValues} raw color values found
-
-🎨 Token Coverage:
-• Color: ${Math.round(analysis.colorTokenCoverage.coverage * 100)}%
-• Spacing: ${Math.round(analysis.spacingConsistency.consistency * 100)}% consistent
-
-📋 Recommendations: ${report.recommendations.length} suggestions
-        
-Check console for detailed report.`);
-        
-        status.textContent = `Audit complete - ${summary.totalVariables} variables found`;
+        // Use showAudit() to open the slide-in panel
+        await ek.showAudit();
+        status.textContent = 'Audit complete - see panel';
         
       } catch (error) {
-        console.error('❌ Audit failed:', error);
-        alert(`❌ Audit failed: ${error.message}\n\nCheck console for details.`);
+        console.error('Audit failed:', error);
         status.textContent = 'Audit failed';
       } finally {
         auditBtn.textContent = 'Run Audit';

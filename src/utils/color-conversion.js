@@ -155,10 +155,21 @@ export function rgbToOklch(r, g, b) {
   let H = Math.atan2(B, A) * (180 / Math.PI);
   if (H < 0) H += 360;
   
-  // Round to reasonable precision
-  const lightness = Math.round(L * 100) / 100;
-  const chroma = Math.round(C * 100) / 100;
-  const hue = Math.round(H);
+  return formatOklch(L, C, H);
+}
+
+/**
+ * Format OKLCH components into a properly rounded string
+ * @param {number} l - Lightness (0-1)
+ * @param {number} c - Chroma (0-0.5 typically)  
+ * @param {number} h - Hue (0-360 degrees)
+ * @returns {string} OKLCH color string, e.g., "oklch(0.62 0.21 255)"
+ */
+export function formatOklch(l, c, h) {
+  // Round to reasonable precision (2-3 decimal places)
+  const lightness = Math.round(l * 1000) / 1000; // 3 decimal places
+  const chroma = Math.round(c * 1000) / 1000;    // 3 decimal places
+  const hue = Math.round(h);                     // whole degrees
   
   return `oklch(${lightness} ${chroma} ${hue})`;
 }

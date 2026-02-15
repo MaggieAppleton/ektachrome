@@ -450,7 +450,7 @@ class TokenCreator extends HTMLElement {
       }
       
       .scope-radio {
-        accent-color: rgb(120, 200, 150);
+        accent-color: ${THEME.colorText};
       }
       
       .preview {
@@ -493,11 +493,13 @@ class TokenCreator extends HTMLElement {
       }
       
       .create-btn {
-        background: ${THEME.colorActive};
+        background: ${THEME.colorBgSubtle};
+        border: 1px solid ${THEME.colorBorder};
         color: ${THEME.colorText};
       }
       .create-btn:hover:not(:disabled) {
-        background: rgba(120, 200, 150, 0.4);
+        background: ${THEME.colorBgHoverStrong};
+        border-color: ${THEME.colorBorderHover};
       }
       .create-btn:disabled {
         opacity: 0.5;

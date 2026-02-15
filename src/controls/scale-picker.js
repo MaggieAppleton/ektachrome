@@ -11,6 +11,8 @@
  *   current-value="1rem">
  * </scale-picker>
  */
+import { THEME } from '../utils/theme.js';
+
 class ScalePicker extends HTMLElement {
   constructor() {
     super();
@@ -90,28 +92,28 @@ class ScalePicker extends HTMLElement {
         .segments {
           display: flex;
           gap: 1px;
-          border-radius: 4px;
+          border-radius: ${THEME.radiusMd};
           overflow: hidden;
         }
         .segment {
           flex: 1;
-          padding: 4px 6px;
-          background: rgba(255,255,255,0.08);
+          padding: 6px 6px;
+          background: ${THEME.colorBgSubtle};
           border: none;
           cursor: pointer;
-          font-family: 'SF Mono', monospace;
-          font-size: 9px;
-          color: rgba(232,228,222,0.5);
+          font-family: ${THEME.fontMono};
+          font-size: ${THEME.fontSizeXs};
+          color: ${THEME.colorTextFaint};
           text-align: center;
-          transition: background 0.1s;
+          transition: background 0.15s ease, color 0.15s ease;
         }
         .segment:hover {
-          background: rgba(255,255,255,0.15);
-          color: rgba(232,228,222,0.8);
+          background: ${THEME.colorBgHoverStrong};
+          color: ${THEME.colorTextMuted};
         }
         .segment.active {
-          background: rgba(120, 200, 150, 0.3);
-          color: rgba(232,228,222,0.9);
+          background: ${THEME.colorBgActive};
+          color: ${THEME.colorText};
         }
       </style>
       <div class="segments">

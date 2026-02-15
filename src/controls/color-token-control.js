@@ -1,5 +1,7 @@
 // Import the OKLCH picker component
 import { OklchPicker } from './oklch-picker.js';
+import { formatOklch } from '../utils/color-conversion.js';
+import { THEME } from '../utils/theme.js';
 
 /**
  * <color-token-control> - Pick from design system color tokens
@@ -41,26 +43,26 @@ class ColorTokenControl extends HTMLElement {
           margin-bottom: 6px;
         }
         .token-name {
-          font-family: 'SF Mono', monospace;
-          font-size: 10px;
-          color: rgba(232, 228, 222, 0.7);
+          font-family: ${THEME.fontMono};
+          font-size: ${THEME.fontSizeSm};
+          color: ${THEME.colorTextMuted};
         }
         .usage-badge {
-          font-size: 9px;
-          color: rgba(232, 228, 222, 0.4);
-          background: rgba(255,255,255,0.06);
-          padding: 1px 6px;
-          border-radius: 8px;
+          font-size: ${THEME.fontSizeXs};
+          color: ${THEME.colorTextDim};
+          background: ${THEME.colorBgSubtle};
+          padding: 2px 8px;
+          border-radius: ${THEME.radiusMd};
         }
         .warning {
-          font-size: 9px;
-          color: rgba(255, 180, 80, 0.8);
+          font-size: ${THEME.fontSizeXs};
+          color: ${THEME.colorWarning};
           margin-top: 4px;
         }
       </style>
       <div class="token-header">
         <span class="token-name">${variable}</span>
-        <span class="usage-badge">used ${usageCount}×</span>
+        <span class="usage-badge">used ${usageCount}x</span>
       </div>
       <!-- Integrated OKLCH picker component -->
       <oklch-picker 
@@ -71,21 +73,19 @@ class ColorTokenControl extends HTMLElement {
         hue="${h}">
       </oklch-picker>
       ${parseInt(usageCount) > 20 
-        ? '<div class="warning">⚠ Changing this affects 20+ elements</div>' 
+        ? '<div class="warning">Changing this affects 20+ elements</div>' 
         : ''}
     `;
     
     // When the picker changes, update the CSS variable globally
     this.shadowRoot.addEventListener('control-change', (e) => {
       const { l, c, h } = e.detail.value;
-      document.documentElement.style.setProperty(
-        variable, 
-        `oklch(${l} ${c} ${h})`
-      );
+      const oklchValue = formatOklch(l, c, h);
+      document.documentElement.style.setProperty(variable, oklchValue);
       // Re-dispatch with token metadata so parent components can react
       this.dispatchEvent(new CustomEvent('control-change', {
         bubbles: true, composed: true,
-        detail: { variable, value: `oklch(${l} ${c} ${h})` }
+        detail: { variable, value: oklchValue }
       }));
     }, { signal: this._abortController.signal });
   }

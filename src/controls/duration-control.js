@@ -147,7 +147,7 @@ class DurationControl extends HTMLElement {
       }
       
       .label {
-        font-size: ${THEME.fontSizeMd};
+        font-size: ${THEME.fontSizeSm};
         font-family: ${THEME.fontMono};
         color: ${THEME.colorTextMuted};
         margin-bottom: 6px;
@@ -163,24 +163,26 @@ class DurationControl extends HTMLElement {
         flex: 1;
         height: 26px;
         background: ${THEME.colorBgSubtle};
+        border: 1px solid ${THEME.colorBorder};
         border-radius: ${THEME.radiusSm};
         cursor: pointer;
-        transition: background 0.1s, color 0.1s;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: ${THEME.fontSizeSm};
+        font-size: ${THEME.fontSizeXs};
         font-family: ${THEME.fontMono};
         color: ${THEME.colorTextFaint};
       }
       
       .step:hover {
-        background: ${THEME.colorBgHover};
+        border-color: ${THEME.colorBorderHover};
         color: ${THEME.colorTextMuted};
       }
       
       .step.active {
-        background: rgba(120, 180, 220, 0.3);
+        background: ${THEME.colorBgActive};
+        border-color: ${THEME.colorText};
         color: ${THEME.colorText};
       }
     `;

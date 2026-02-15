@@ -16,6 +16,9 @@
  * - 'control-change': { detail: { key, value: { l, c, h } } }
  */
 
+import { THEME } from '../utils/theme.js';
+import { formatOklch } from '../utils/color-conversion.js';
+
 class OklchPicker extends HTMLElement {
   constructor() {
     super();
@@ -62,15 +65,15 @@ class OklchPicker extends HTMLElement {
         }
 
         .label {
-          font-size: 11px;
-          color: rgba(232, 228, 222, 0.7);
+          font-size: ${THEME.fontSizeMd};
+          color: ${THEME.colorTextMuted};
         }
 
         .swatch {
           width: 16px;
           height: 16px;
-          border-radius: 4px;
-          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: ${THEME.radiusSm};
+          border: 1px solid ${THEME.colorBorderHover};
         }
 
         .sliders {
@@ -86,9 +89,9 @@ class OklchPicker extends HTMLElement {
         }
 
         .slider-label {
-          font-size: 9px;
-          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-          color: rgba(232, 228, 222, 0.4);
+          font-size: ${THEME.fontSizeXs};
+          font-family: ${THEME.fontMono};
+          color: ${THEME.colorTextDim};
           width: 8px;
           flex-shrink: 0;
         }
@@ -102,7 +105,7 @@ class OklchPicker extends HTMLElement {
         .slider-track {
           width: 100%;
           height: 100%;
-          border-radius: 10px;
+          border-radius: ${THEME.radiusLg};
           cursor: ew-resize;
         }
 
@@ -111,17 +114,17 @@ class OklchPicker extends HTMLElement {
           top: 50%;
           width: 8px;
           height: 24px;
-          background: white;
-          border-radius: 4px;
+          background: ${THEME.colorText};
+          border-radius: ${THEME.radiusSm};
           transform: translate(-50%, -50%);
           box-shadow: 0 0 0 1px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3);
           pointer-events: none;
         }
 
         .slider-value {
-          font-size: 9px;
-          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-          color: rgba(232, 228, 222, 0.4);
+          font-size: ${THEME.fontSizeXs};
+          font-family: ${THEME.fontMono};
+          color: ${THEME.colorTextDim};
           width: 32px;
           text-align: right;
           flex-shrink: 0;
@@ -314,7 +317,7 @@ class OklchPicker extends HTMLElement {
   }
 
   _updateSwatch() {
-    this._swatch.style.background = `oklch(${this.l} ${this.c} ${this.h})`;
+    this._swatch.style.background = formatOklch(this.l, this.c, this.h);
   }
 
   _onLightnessStart(e) {

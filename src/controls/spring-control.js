@@ -220,7 +220,7 @@ class SpringControl extends HTMLElement {
     ctx.stroke();
 
     // Draw spring curve
-    ctx.strokeStyle = 'rgba(120, 180, 220, 0.8)';
+    ctx.strokeStyle = 'rgba(232, 228, 222, 0.7)';
     ctx.lineWidth = 2;
     ctx.beginPath();
 
@@ -323,7 +323,7 @@ class SpringControl extends HTMLElement {
         left: 8px;
         width: 8px;
         height: 8px;
-        background: rgba(120, 200, 150, 0.8);
+        background: ${THEME.colorText};
         border-radius: 50%;
         pointer-events: none;
       }
@@ -359,18 +359,23 @@ class SpringControl extends HTMLElement {
       
       .slider::-webkit-slider-thumb {
         -webkit-appearance: none;
-        width: 14px;
-        height: 14px;
-        background: rgba(120, 180, 220, 0.8);
+        width: 10px;
+        height: 10px;
+        background: ${THEME.colorText};
         border-radius: 50%;
         cursor: pointer;
         border: none;
+        transition: transform 0.1s ease;
+      }
+      
+      .slider::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
       }
       
       .slider::-moz-range-thumb {
-        width: 14px;
-        height: 14px;
-        background: rgba(120, 180, 220, 0.8);
+        width: 10px;
+        height: 10px;
+        background: ${THEME.colorText};
         border-radius: 50%;
         cursor: pointer;
         border: none;
